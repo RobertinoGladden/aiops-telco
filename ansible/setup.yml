@@ -1,0 +1,232 @@
+---
+# =============================================================
+# TELCO AIOPS — Tahap 1: Ansible Playbook
+# Fungsi: Konfigurasi otomatis node Kubernetes
+#         Jalankan: ansible-playbook -i inventory.yml setup.yml
+# =============================================================
+
+- name: Setup Telco AIOps Node
+  hosts: telco_nodes
+  become: true   # Jalankan sebagai root
+
+  vars:
+    k3s_version: "v1.28.4+k3s1"
+    telco_user: "telco"
+    project_dir: "/opt/telco-aiops"
+    python_version: "3.11"
+
+  tasks:
+
+    # ── 1. System Prerequisites ──────────────────────────────
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install system dependencies
+      apt:
+        name:
+          - curl
+          - wget
+          - git
+          - htop
+          - net-tools
+          - python3
+          - python3-pip
+          - python3-venv
+          - docker.io
+          - docker-compose
+        state: present
+
+    - name: Start dan enable Docker
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    # ── 2. User Setup ────────────────────────────────────────
+    - name: Buat user telco
+      user:
+        name: "{{ telco_user }}"
+        groups: docker, sudo
+        shell: /bin/bash
+        create_home: yes
+
+    - name: Tambah SSH key untuk telco user
+      authorized_key:
+        user: "{{ telco_user }}"
+        state: present
+        key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+
+    # ── 3. Sysctl: Optimize untuk Kubernetes ─────────────────
+    - name: Konfigurasi kernel parameters untuk K8s
+      sysctl:
+        name: "{{ item.key }}"
+        value: "{{ item.value }}"
+        state: present
+        reload: yes
+      loop:
+        - { key: "net.bridge.bridge-nf-call-iptables",  value: "1" }
+        - { key: "net.bridge.bridge-nf-call-ip6tables", value: "1" }
+        - { key: "net.ipv4.ip_forward",                 value: "1" }
+        - { key: "vm.max_map_count",                    value: "262144" }  # Untuk Kafka/Elasticsearch
+
+    - name: Load kernel modules yang dibutuhkan K8s
+      modprobe:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - br_netfilter
+        - overlay
+
+    # ── 4. Install k3s (Kubernetes ringan) ───────────────────
+    - name: Cek apakah k3s sudah terinstall
+      stat:
+        path: /usr/local/bin/k3s
+      register: k3s_binary
+
+    - name: Install k3s
+      shell: |
+        curl -sfL https://get.k3s.io | \
+          INSTALL_K3S_VERSION={{ k3s_version }} \
+          sh -s - \
+          --write-kubeconfig-mode 644 \
+          --disable traefik \
+          --node-label "node-role=aiops"
+      when: not k3s_binary.stat.exists
+
+    - name: Tunggu k3s siap
+      wait_for:
+        path: /etc/rancher/k3s/k3s.yaml
+        timeout: 60
+
+    - name: Copy kubeconfig ke home user
+      copy:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: "/home/{{ telco_user }}/.kube/config"
+        owner: "{{ telco_user }}"
+        group: "{{ telco_user }}"
+        mode: "0600"
+        remote_src: yes
+
+    # ── 5. Install kubectl & Helm ────────────────────────────
+    - name: Symlink kubectl dari k3s
+      file:
+        src: /usr/local/bin/k3s
+        dest: /usr/local/bin/kubectl
+        state: link
+      ignore_errors: yes
+
+    - name: Install Helm
+      shell: |
+        curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+      args:
+        creates: /usr/local/bin/helm
+
+    # ── 6. Project Directory ─────────────────────────────────
+    - name: Buat direktori project
+      file:
+        path: "{{ project_dir }}"
+        state: directory
+        owner: "{{ telco_user }}"
+        group: "{{ telco_user }}"
+        mode: "0755"
+
+    - name: Buat sub-direktori project
+      file:
+        path: "{{ project_dir }}/{{ item }}"
+        state: directory
+        owner: "{{ telco_user }}"
+        mode: "0755"
+      loop:
+        - terraform
+        - kubernetes
+        - scripts
+        - data
+        - models
+        - logs
+
+    # ── 7. Python Environment ────────────────────────────────
+    - name: Buat Python virtual environment
+      become_user: "{{ telco_user }}"
+      command: python3 -m venv {{ project_dir }}/venv
+      args:
+        creates: "{{ project_dir }}/venv"
+
+    - name: Install Python packages untuk Telco AIOps
+      become_user: "{{ telco_user }}"
+      pip:
+        name:
+          - kafka-python==2.0.2
+          - pandas==2.1.0
+          - numpy==1.26.0
+          - scikit-learn==1.3.0
+          - mlflow==2.8.0
+          - boto3==1.29.0        # Untuk akses MinIO/S3
+          - prometheus-client==0.18.0
+          - fastapi==0.104.0    # Untuk REST API model
+          - uvicorn==0.24.0
+          - apache-airflow==2.7.0
+        virtualenv: "{{ project_dir }}/venv"
+
+    # ── 8. Terraform ─────────────────────────────────────────
+    - name: Download Terraform
+      get_url:
+        url: "https://releases.hashicorp.com/terraform/1.6.4/terraform_1.6.4_linux_amd64.zip"
+        dest: /tmp/terraform.zip
+
+    - name: Extract Terraform
+      unarchive:
+        src: /tmp/terraform.zip
+        dest: /usr/local/bin
+        remote_src: yes
+        mode: "0755"
+
+    # ── 9. Verifikasi Instalasi ──────────────────────────────
+    - name: Verifikasi kubectl
+      command: kubectl version --client --short
+      register: kubectl_version
+      changed_when: false
+
+    - name: Verifikasi Terraform
+      command: terraform version
+      register: tf_version
+      changed_when: false
+
+    - name: Verifikasi Helm
+      command: helm version --short
+      register: helm_version
+      changed_when: false
+
+    - name: Tampilkan hasil verifikasi
+      debug:
+        msg:
+          - "✅ kubectl: {{ kubectl_version.stdout }}"
+          - "✅ Terraform: {{ tf_version.stdout_lines[0] }}"
+          - "✅ Helm: {{ helm_version.stdout }}"
+
+    # ── 10. Firewall ─────────────────────────────────────────
+    - name: Buka port yang dibutuhkan
+      ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      loop:
+        - "6443"   # Kubernetes API
+        - "9092"   # Kafka
+        - "9000"   # MinIO API
+        - "9001"   # MinIO Console
+        - "9090"   # Prometheus
+        - "3000"   # Grafana
+        - "8080"   # MLflow / Airflow
+
+  handlers:
+    - name: restart docker
+      systemd:
+        name: docker
+        state: restarted
+
+    - name: restart k3s
+      systemd:
+        name: k3s
+        state: restarted

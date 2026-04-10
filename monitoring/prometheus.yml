@@ -1,0 +1,51 @@
+# =============================================================
+# TELCO AIOPS — Prometheus Configuration
+# Fungsi: Definisikan apa saja yang di-monitor Prometheus
+# =============================================================
+
+global:
+  scrape_interval:     15s  # Ambil metrics setiap 15 detik
+  evaluation_interval: 15s  # Evaluasi alert rules setiap 15 detik
+  external_labels:
+    monitor: 'telco-aiops'
+    environment: 'development'
+
+# ─── ALERT RULES ─────────────────────────────────────────────
+rule_files:
+  - "/etc/prometheus/alerts.yml"
+
+# ─── SCRAPE CONFIGS ──────────────────────────────────────────
+scrape_configs:
+
+  # Monitor Prometheus sendiri
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Monitor Log Generator (akan kita tambah metrics-nya di Tahap 4)
+  - job_name: 'telco-log-generator'
+    static_configs:
+      - targets: ['log-generator:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # Monitor Kafka (menggunakan kafka-exporter)
+  - job_name: 'kafka'
+    static_configs:
+      - targets: ['kafka-exporter:9308']
+    scrape_interval: 30s
+
+  # Monitor AI Model API (running on host Windows)
+  - job_name: 'telco-model-api'
+    static_configs:
+      - targets: ['host.docker.internal:8081']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # Monitor semua node Kubernetes
+  - job_name: 'kubernetes-nodes'
+    kubernetes_sd_configs:
+      - role: node
+    relabel_configs:
+      - action: labelmap
+        regex: __meta_kubernetes_node_label_(.+)

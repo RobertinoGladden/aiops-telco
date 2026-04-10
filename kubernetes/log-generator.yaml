@@ -1,0 +1,188 @@
+# =============================================================
+# TELCO AIOPS — Tahap 1: Kubernetes Manifests
+# Fungsi: Deploy log generator sebagai Pod di Kubernetes
+#         Jalankan: kubectl apply -f log-generator.yaml
+# =============================================================
+
+---
+# Namespace khusus untuk semua komponen Telco AIOps
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: telco-aiops
+  labels:
+    project: telco-aiops
+    stage: "1-devops"
+
+---
+# ConfigMap: Konfigurasi yang bisa diubah tanpa rebuild image
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: telco-config
+  namespace: telco-aiops
+data:
+  KAFKA_BOOTSTRAP_SERVERS: "telco-kafka:9092"
+  KAFKA_TOPIC: "telco.network.metrics"
+  NUM_DEVICES: "50"
+  SEND_INTERVAL: "1.0"
+  MINIO_ENDPOINT: "telco-minio:9000"
+  MINIO_BUCKET: "telco-raw-data"
+  LOG_LEVEL: "INFO"
+
+---
+# Secret: Credentials (base64 encoded)
+# CATATAN: Di production, gunakan HashiCorp Vault atau Sealed Secrets
+apiVersion: v1
+kind: Secret
+metadata:
+  name: telco-secrets
+  namespace: telco-aiops
+type: Opaque
+data:
+  # telcoadmin (base64)
+  MINIO_ACCESS_KEY: dGVsY29hZG1pbg==
+  # telcopassword123 (base64)
+  MINIO_SECRET_KEY: dGVsY29wYXNzd29yZDEyMw==
+
+---
+# Deployment: Log Generator
+# Ini adalah "perangkat jaringan virtual" kita
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: log-generator
+  namespace: telco-aiops
+  labels:
+    app: log-generator
+    component: data-source
+    stage: "1-devops"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: log-generator
+  template:
+    metadata:
+      labels:
+        app: log-generator
+      annotations:
+        # Prometheus akan scrape metrics dari port ini
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+    spec:
+      containers:
+        - name: log-generator
+          image: python:3.11-slim
+          command: ["python", "/app/log_generator.py"]
+
+          # Resource limits penting! Cegah container "rakus"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+
+          envFrom:
+            - configMapRef:
+                name: telco-config
+            - secretRef:
+                name: telco-secrets
+
+          volumeMounts:
+            - name: scripts
+              mountPath: /app
+
+          # Health check: Kubernetes tahu container masih hidup
+          livenessProbe:
+            exec:
+              command: ["python", "-c", "import socket; socket.setdefaulttimeout(3); s = socket.socket(); s.connect(('telco-kafka', 9092)); s.close()"]
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 3
+
+      volumes:
+        - name: scripts
+          configMap:
+            name: log-generator-scripts
+
+      # Restart policy: selalu restart jika crash
+      restartPolicy: Always
+
+---
+# Service: Kafka (ClusterIP — hanya bisa diakses dalam cluster)
+apiVersion: v1
+kind: Service
+metadata:
+  name: telco-kafka
+  namespace: telco-aiops
+spec:
+  selector:
+    app: kafka
+  ports:
+    - name: kafka
+      port: 9092
+      targetPort: 9092
+  type: ClusterIP
+
+---
+# Service: MinIO (NodePort — bisa diakses dari luar cluster)
+apiVersion: v1
+kind: Service
+metadata:
+  name: telco-minio
+  namespace: telco-aiops
+spec:
+  selector:
+    app: minio
+  ports:
+    - name: api
+      port: 9000
+      targetPort: 9000
+      nodePort: 30900
+    - name: console
+      port: 9001
+      targetPort: 9001
+      nodePort: 30901
+  type: NodePort
+
+---
+# Service: Grafana Dashboard
+apiVersion: v1
+kind: Service
+metadata:
+  name: telco-grafana
+  namespace: telco-aiops
+spec:
+  selector:
+    app: grafana
+  ports:
+    - port: 3000
+      targetPort: 3000
+      nodePort: 30300
+  type: NodePort
+
+---
+# HorizontalPodAutoscaler: Scale otomatis berdasarkan CPU
+# Ini adalah contoh DevOps yang sesungguhnya!
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: log-generator-hpa
+  namespace: telco-aiops
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: log-generator
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

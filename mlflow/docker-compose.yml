@@ -1,0 +1,43 @@
+# =============================================================
+# TELCO AIOPS — Tahap 3: MLflow Tracking Server
+# Fungsi: UI untuk melihat semua eksperimen ML, metrics,
+#         dan versioning model secara visual
+#
+# Jalankan: docker-compose up -d
+# MLflow UI: http://localhost:5000
+# =============================================================
+
+version: '3.8'
+
+services:
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v3.11.1
+    container_name: telco-mlflow
+    command: >
+      mlflow server
+        --host 0.0.0.0
+        --port 5000
+        --backend-store-uri sqlite:///mlflow.db
+        --default-artifact-root ./mlflow-artifacts
+    environment:
+      MLFLOW_S3_ENDPOINT_URL: http://telco-minio:9000
+      AWS_ACCESS_KEY_ID: telcoadmin
+      AWS_SECRET_ACCESS_KEY: telcopassword123
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_EC2_METADATA_DISABLED: true
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow-data:/app
+    working_dir: /app
+    networks:
+      - telco-aiops-network
+    restart: unless-stopped
+
+volumes:
+  mlflow-data:
+
+networks:
+  telco-aiops-network:
+    external: true
+    name: telco-aiops-network

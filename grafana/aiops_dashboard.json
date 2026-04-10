@@ -1,0 +1,201 @@
+{
+  "title": "Telco AIOps — Network Anomaly Dashboard",
+  "uid": "telco-aiops-main",
+  "tags": ["telco", "aiops", "anomaly"],
+  "timezone": "browser",
+  "refresh": "5s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+
+    {
+      "id": 1,
+      "title": "🔴 Anomali Aktif Saat Ini",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 0, "w": 4, "h": 4 },
+      "targets": [{
+        "expr": "sum(telco_predictions_total{result='anomaly'}) or vector(0)",
+        "legendFormat": "Total Anomali"
+      }],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "yellow", "value": 10 },
+              { "color": "red", "value": 50 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+
+    {
+      "id": 2,
+      "title": "✅ Prediksi Normal",
+      "type": "stat",
+      "gridPos": { "x": 4, "y": 0, "w": 4, "h": 4 },
+      "targets": [{
+        "expr": "sum(telco_predictions_total{result='normal'}) or vector(0)",
+        "legendFormat": "Normal"
+      }],
+      "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "color": { "fixedColor": "green", "mode": "fixed" } } }
+    },
+
+    {
+      "id": 3,
+      "title": "⚡ Status Model AI",
+      "type": "stat",
+      "gridPos": { "x": 8, "y": 0, "w": 4, "h": 4 },
+      "targets": [{
+        "expr": "telco_model_loaded",
+        "legendFormat": "Model Status"
+      }],
+      "options": {
+        "colorMode": "background",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "mappings": [
+          { "type": "value", "options": { "0": { "text": "OFFLINE", "color": "red" } } },
+          { "type": "value", "options": { "1": { "text": "ONLINE", "color": "green" } } }
+        ]
+      }
+    },
+
+    {
+      "id": 4,
+      "title": "⏱️ Latency Inferensi Model (ms)",
+      "type": "stat",
+      "gridPos": { "x": 12, "y": 0, "w": 4, "h": 4 },
+      "targets": [{
+        "expr": "rate(telco_prediction_latency_seconds_sum[1m]) / rate(telco_prediction_latency_seconds_count[1m]) * 1000",
+        "legendFormat": "Avg Latency"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "yellow", "value": 50 },
+              { "color": "red", "value": 100 }
+            ]
+          }
+        }
+      }
+    },
+
+    {
+      "id": 5,
+      "title": "📈 Laju Prediksi — Anomali vs Normal (per menit)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 4, "w": 16, "h": 8 },
+      "targets": [
+        {
+          "expr": "rate(telco_predictions_total{result='anomaly'}[1m]) * 60",
+          "legendFormat": "🔴 Anomali/menit"
+        },
+        {
+          "expr": "rate(telco_predictions_total{result='normal'}[1m]) * 60",
+          "legendFormat": "✅ Normal/menit"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "lineWidth": 2, "fillOpacity": 15 } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "🔴 Anomali/menit" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "✅ Normal/menit" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }] }
+        ]
+      }
+    },
+
+    {
+      "id": 6,
+      "title": "🌡️ Anomaly Score per Device (Top 10 tertinggi)",
+      "type": "bargauge",
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
+      "targets": [{
+        "expr": "topk(10, telco_anomaly_score_current)",
+        "legendFormat": "{{device_id}} [{{region}}]"
+      }],
+      "options": {
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0, "max": 1,
+          "thresholds": {
+            "steps": [
+              { "color": "green",  "value": 0 },
+              { "color": "yellow", "value": 0.5 },
+              { "color": "orange", "value": 0.7 },
+              { "color": "red",    "value": 0.85 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+
+    {
+      "id": 7,
+      "title": "🗺️ Anomali per Region",
+      "type": "piechart",
+      "gridPos": { "x": 12, "y": 12, "w": 8, "h": 8 },
+      "targets": [{
+        "expr": "sum by (region) (telco_anomaly_score_current > 0.5)",
+        "legendFormat": "{{region}}"
+      }],
+      "options": { "pieType": "donut", "displayLabels": ["name", "percent"] }
+    },
+
+    {
+      "id": 8,
+      "title": "📊 Histogram Latency Inferensi",
+      "type": "histogram",
+      "gridPos": { "x": 0, "y": 20, "w": 12, "h": 6 },
+      "targets": [{
+        "expr": "rate(telco_prediction_latency_seconds_bucket[5m])",
+        "legendFormat": "{{le}}"
+      }],
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+
+    {
+      "id": 9,
+      "title": "🔄 Total Prediksi Kumulatif",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 20, "w": 8, "h": 6 },
+      "targets": [
+        {
+          "expr": "sum(telco_predictions_total)",
+          "legendFormat": "Total semua prediksi"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 } } }
+    }
+
+  ],
+
+  "templating": {
+    "list": [
+      {
+        "name": "region",
+        "type": "query",
+        "datasource": "Prometheus",
+        "query": "label_values(telco_anomaly_score_current, region)",
+        "label": "Region",
+        "includeAll": true,
+        "allValue": ".*"
+      }
+    ]
+  }
+}

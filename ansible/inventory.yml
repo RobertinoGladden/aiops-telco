@@ -1,0 +1,29 @@
+# =============================================================
+# TELCO AIOPS — Ansible Inventory
+# Ganti IP address sesuai server Anda
+# Untuk local development: gunakan localhost
+# =============================================================
+
+all:
+  children:
+    telco_nodes:
+      hosts:
+        # ── Local Development (gunakan ini dulu) ──────────────
+        localhost:
+          ansible_connection: local
+          ansible_python_interpreter: /usr/bin/python3
+
+        # ── Production Servers (aktifkan setelah local berhasil)
+        # node1:
+        #   ansible_host: 192.168.1.10
+        #   ansible_user: ubuntu
+        #   ansible_ssh_private_key_file: ~/.ssh/telco_key
+        #
+        # node2:
+        #   ansible_host: 192.168.1.11
+        #   ansible_user: ubuntu
+        #   ansible_ssh_private_key_file: ~/.ssh/telco_key
+
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+    project_name: telco-aiops
