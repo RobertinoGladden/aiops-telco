@@ -266,62 +266,6 @@ Once the model server and predictor are running, the system will:
 
 ---
 
-## 📊 Dashboards
-
-Open the following URLs after running `docker compose up -d`:
-
-| Service | URL | Credentials |
-|---------|-----|-------------|
-| **MinIO** | http://localhost:9001 | `telcoadmin` / `telcopassword123` |
-| **Prometheus** | http://localhost:9090 | — |
-| **Grafana** | http://localhost:3000 | `admin` / `telco123` |
-| **MLflow** | http://localhost:5000 | — |
-| **Model API** | http://localhost:8000 | — |
-| **API Docs** | http://localhost:8000/docs | — |
-
-### Import Grafana Dashboard
-
-1. Open Grafana → **Dashboards** → **Import**
-2. Upload `grafana/aiops_dashboard.json`
-3. Select your **Prometheus** data source
-4. Click **Import** — your dashboard is live!
-
----
-
-### Deploy to Kubernetes (Optional)
-
-```bash
-# Apply manifests
-kubectl apply -f kubernetes/log-generator.yaml
-
-# Check running pods
-kubectl get pods -n telco-aiops
-
-# Stream logs
-kubectl logs -f deployment/log-generator -n telco-aiops
-```
-
----
-
-## 📟 Sample Real-Time Output
-
-```
-2026-04-10 08:22:52 [WARNING] ⚡ Executing: SCALE_RESOURCES on BTS-MAK-0039
-2026-04-10 08:22:53 [INFO]    🤖 Prediction: 10 devices | Anomalies: 2 | Critical: 2 | Avg score: 0.23
-                                  Inference: 32.5ms
-2026-04-10 08:22:53 [WARNING] 🔴 Core-Router-SUR-0041 [Medan] score=1.000
-2026-04-10 08:22:53 [WARNING] 🔴 BTS-MED-0043 [Medan] score=1.000
-2026-04-10 08:22:53 [WARNING] 🚨 CRITICAL ANOMALY [Medan] Core-Router-SUR-0041 score=1.000 → TRIGGERING AUTO-REMEDIATION
-2026-04-10 08:22:53 [WARNING] ⚡ Executing: REROUTE_TRAFFIC on Core-Router-SUR-0041
-2026-04-10 08:22:53 [WARNING] ⚡ Executing: SWITCH_BACKUP_LINK on Core-Router-SUR-0041
-2026-04-10 08:22:53 [WARNING] ⚡ Executing: SCALE_RESOURCES on Core-Router-SUR-0041
-2026-04-10 08:22:53 [WARNING] 🚨 CRITICAL ANOMALY [Medan] BTS-MED-0043 score=1.000 → TRIGGERING AUTO-REMEDIATION
-2026-04-10 08:22:53 [WARNING] ⚡ Executing: REROUTE_TRAFFIC on BTS-MED-0043
-2026-04-10 08:22:53 [WARNING] ⚡ Executing: SWITCH_BACKUP_LINK on BTS-MED-0043
-```
-
----
-
 ## 🧠 Key Concepts Covered
 
 ### Infrastructure as Code (Terraform)
@@ -384,18 +328,6 @@ kubectl logs -f deployment/log-generator -n telco-aiops
 | `terraform/main.tf` | Full infrastructure definition |
 | `ansible/setup.yml` | Server configuration playbook |
 | `CHEATSHEET.ps1` | Quick command reference for Windows |
-
----
-
-## 🤝 Contributing
-
-Contributions, issues, and feature requests are welcome!
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/your-feature-name`
-3. Commit your changes: `git commit -m "feat: add your feature"`
-4. Push to the branch: `git push origin feature/your-feature-name`
-5. Open a Pull Request
 
 ---
 
