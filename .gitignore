@@ -1,0 +1,41 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# Logs
+logs/
+*.log
+*.log.err
+
+# Terraform
+terraform/.terraform/
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/tfplan.out
+terraform/.terraform.lock.hcl
+
+# Runtime
+.aiops_pids.json
+mlruns/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Old setup scripts (sudah digantikan start.ps1)
+setup.sh
+setup_tahap2.ps1
+setup_tahap3.ps1
+CHEATSHEET.ps1
+start_all.ps1
