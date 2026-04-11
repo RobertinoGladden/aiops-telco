@@ -19,6 +19,9 @@ From raw device logs to a self-healing network — fully automated.
 [Features](#-features) • [Architecture](#-system-architecture) • [Getting Started](#-getting-started) • [Dashboards](#-dashboards) • [Tech Stack](#-tech-stack)
 
 </div>
+---
+
+![AIOps Demo](C:\Users\lapt1\Downloads\aiops\demo.gif)
 
 ---
 
