@@ -21,7 +21,9 @@ From raw device logs to a self-healing network — fully automated.
 </div>
 ---
 
-![AIOps Demo](C:\Users\lapt1\Downloads\aiops\demo.gif)
+## 🎬 Demo
+
+![AIOps Demo](demo.gif)
 
 ---
 
