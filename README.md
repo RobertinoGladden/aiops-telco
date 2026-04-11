@@ -1,4 +1,4 @@
-# 🛰️ Telco AIOps — Network Anomaly Predictor & Auto-Healer
+# 🛰️ Telco AIOps — Network Anomaly Predictor
 
 <div align="center">
 
@@ -19,11 +19,16 @@ From raw device logs to a self-healing network — fully automated.
 [Features](#-features) • [Architecture](#-system-architecture) • [Getting Started](#-getting-started) • [Dashboards](#-dashboards) • [Tech Stack](#-tech-stack)
 
 </div>
+
 ---
 
 ## 🎬 Demo
 
-![AIOps Demo](demo.gif)
+<div align="center">
+  <img src="demo.gif" alt="Telco AIOps Demo" width="80%" />
+  <br>
+  <sub>Auto-healing triggered when anomaly score = 1.0</sub>
+</div>
 
 ---
 
