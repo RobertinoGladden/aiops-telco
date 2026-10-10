@@ -1,353 +1,151 @@
-# 🛰️ Telco AIOps — Network Anomaly Predictor
+# Strata — network intelligence & operations
 
-<div align="center">
+An English-language operations workspace for ISP NOCs, network providers, and infrastructure teams. Strata connects field monitoring, inventory, streaming telemetry, ML detection, and AI decision review in one evidence-based workflow.
 
-![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![Kafka](https://img.shields.io/badge/Apache_Kafka-231F20?style=for-the-badge&logo=apache-kafka&logoColor=white)
-![MinIO](https://img.shields.io/badge/MinIO-C72E49?style=for-the-badge&logo=minio&logoColor=white)
-![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=for-the-badge&logo=prometheus&logoColor=white)
-![Grafana](https://img.shields.io/badge/Grafana-F46800?style=for-the-badge&logo=grafana&logoColor=white)
-![MLflow](https://img.shields.io/badge/MLflow-0194E2?style=for-the-badge&logo=mlflow&logoColor=white)
-![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white)
-![Terraform](https://img.shields.io/badge/Terraform-7B42BC?style=for-the-badge&logo=terraform&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+The layered network logo represents infrastructure, telemetry, and decisions connected through a common operational view. The console uses a restrained carbon and steel palette, orbital halftone, rounded surfaces, responsive navigation, and accessible motion.
 
-**An end-to-end AIOps project simulating a real-world Telecommunications network AI infrastructure.**  
-From raw device logs to a self-healing network — fully automated.
+## What is implemented
 
-[Features](#-features) • [Architecture](#-system-architecture) • [Getting Started](#-getting-started) • [Dashboards](#-dashboards) • [Tech Stack](#-tech-stack)
+- **Five field adapters:** NetBox, Zabbix, LibreNMS, GNS3 v2, and EVE-NG, with configurable mappings and shared device identities.
+- **Validated telemetry:** source/event IDs, UTC timestamps, measurement ranges, optional labels, and explicit missing values.
+- **Durable processing:** Kafka commits after successful storage/detection; invalid events are acknowledged in a dead-letter topic before committing their source offsets.
+- **Persistent incidents:** consecutive confirmations, event deduplication, maintenance suppression, late-event rejection, recovery confirmation, and transition history.
+- **Real operational monitoring:** collector freshness, ten platform probes, storage/detection heartbeats and counters, Kafka lag, dead-letter offsets, firing alerts, delivery retries, regional footprint, and daily AI usage.
+- **Reviewable AI:** on-demand Groq structured analysis followed by OpenAI Decisions, allowed actions, confidence/evidence gates, evidence hashes, provider-stage auditing, persistent cooldown/quota, and idempotent review submission.
+- **Practical operator UI:** searchable incidents/inventory, provider configuration, setup checklist, animated detail dialogs, reduced-motion support, operational snapshot exports, and decision audit exports.
+- **Inspectable ML:** shared causal features, chronological holdout, train-only scaler fitting, historical model artifacts, MLflow evaluation, and measured-rule fallback.
+- **Field engineering:** lab topology and an Ansible playbook for approved latency/loss experiments on Linux lab interfaces.
 
-</div>
+## Data flow
 
----
-
-## 🎬 Demo
-
-<div align="center">
-  <img src="demo.gif" alt="Telco AIOps Demo" width="80%" />
-  <br>
-  <sub>Auto-healing triggered when anomaly score = 1.0</sub>
-</div>
-
----
-
-## 📖 Overview
-
-**Telco AIOps** is a production-grade, end-to-end Artificial Intelligence for IT Operations (AIOps) system built for telecommunications infrastructure. It simulates a real-world environment of **50 network devices** across multiple regions and demonstrates how AI can detect anomalies and automatically trigger self-healing remediation — without human intervention.
-
-This project covers the **full AIOps lifecycle** across 4 stages:
-
-| Stage | Name | Technologies |
-|-------|------|--------------|
-| Stage 1 | Infrastructure as Code | Terraform, Ansible, Kubernetes |
-| Stage 2 | Data Streaming Pipeline | Apache Kafka, MinIO, Python |
-| Stage 3 | ML Model & Inference API | Scikit-learn, MLflow, FastAPI |
-| Stage 4 | Observability & Auto-Healing | Prometheus, Grafana, Python |
-
----
-
-## ✨ Features
-
-- 📡 **Real-time Log Simulation** — Generates synthetic network logs from 50 simulated telecom devices (BTS, Core Routers, etc.) across multiple cities
-- 🔄 **Streaming Data Pipeline** — Streams logs via Apache Kafka and stores them in MinIO (S3-compatible object storage)
-- 🤖 **ML Anomaly Detection** — Trained machine learning model that scores each device for anomaly probability in real-time
-- 🚨 **Auto-Remediation Engine** — Automatically executes corrective actions when a critical anomaly is detected (score = 1.0)
-- 📊 **Live Observability Dashboard** — Grafana dashboard powered by Prometheus metrics for real-time network health visibility
-- 🧪 **Experiment Tracking** — MLflow integration for model versioning, parameter logging, and reproducible experiments
-- 🏗️ **IaC-Ready** — Full Terraform and Ansible configuration for reproducible infrastructure provisioning
-- ☸️ **Kubernetes Support** — Deployable to a K8s cluster with ready-made manifests
-
----
-
-## 🏗️ Project Structure
-
-```
-telco-aiops/
-├── terraform/                  # Stage 1: Infrastructure as Code
-│   └── main.tf                 # Provisions Kafka, MinIO, Prometheus, Grafana
-├── ansible/                    # Stage 1: Automated server configuration
-│   ├── setup.yml               # Main playbook
-│   └── inventory.yml           # Server inventory
-├── kubernetes/                 # Stage 1: Kubernetes deployment
-│   └── log-generator.yaml      # K8s deployment manifest
-├── scripts/                    # Stage 2: Data source simulation
-│   └── log_generator.py        # Simulates 50 network devices
-├── consumer/                   # Stage 2: Stream processing
-│   └── kafka_to_minio.py       # Kafka consumer → MinIO storage
-├── model/                      # Stage 3: Machine learning
-│   └── train.py                # Model training script
-├── api/                        # Stage 3: Inference server
-│   └── model_server.py         # FastAPI prediction server
-├── predictor/                  # Stage 4: Real-time prediction & remediation
-├── monitoring/                 # Stage 4: Observability configs
-├── grafana/
-│   └── aiops_dashboard.json    # Pre-built Grafana dashboard
-├── mlflow/                     # MLflow tracking configuration
-├── docker-compose.yml          # Full local stack orchestration
-├── setup.sh                    # Automated setup script
-├── setup_tahap2.ps1            # Stage 2 setup (PowerShell)
-├── setup_tahap3.ps1            # Stage 3 setup (PowerShell)
-├── CHEATSHEET.ps1              # Quick command reference
-└── README.md
+```mermaid
+flowchart LR
+    Lab[GNS3 / EVE-NG topology] --> Hub[Integration Hub]
+    NetBox[NetBox identity & maintenance] --> Hub
+    Monitor[Zabbix / LibreNMS measurements] --> Hub
+    Exporter[Authenticated custom ingest] --> Hub
+    Hub -->|Durable outbox| Kafka
+    Simulator[Optional simulator] --> Kafka
+    Kafka --> Storage[Storage worker]
+    Storage --> MinIO[Raw & feature Parquet]
+    MinIO --> Training[Training / MLflow]
+    Training --> Model[Model API]
+    Kafka --> Predictor[Detection worker]
+    Model --> Predictor
+    Predictor -->|Persisted detections| Hub
+    Hub --> Groq[Groq structured analysis]
+    Groq --> Decisions[OpenAI Decisions]
+    Decisions --> Gate[Evidence & operator policy]
+    Gate --> Hub
+    Hub -->|Review request| Workflow[Approval / operational workflow]
+    Prometheus --> Alertmanager --> Hub
+    Prometheus --> Grafana
+    Hub --> Console[Strata console]
 ```
 
----
+## Start on Windows
 
-## 🔧 System Architecture
+The full stack requires a running Docker Desktop engine and Compose v2 supporting `up --wait`. Python application dependencies run in containers.
 
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                       TELCO AIOPS PIPELINE                        │
-└──────────────────────────────────────────────────────────────────┘
-
-  [50 Network Devices]
-  BTS / Core Routers / etc.
-          │  JSON logs (real-time)
-          ▼
-  ┌──────────────┐     ┌──────────────────┐     ┌──────────────┐
-  │log_generator │────▶│  Apache Kafka    │────▶│    MinIO     │
-  │  (Python)    │     │  (Stream Broker) │     │  (Storage)   │
-  └──────────────┘     └──────────────────┘     └──────────────┘
-                                                        │
-                                                        ▼
-                                              ┌──────────────────┐
-                                              │  Model Training  │
-                                              │  Scikit-learn +  │
-                                              │     MLflow       │
-                                              └──────────────────┘
-                                                        │
-                                                        ▼
-  ┌──────────────┐     ┌──────────────────┐     ┌──────────────┐
-  │   Grafana    │◀────│   Prometheus     │◀────│   FastAPI    │
-  │  Dashboard   │     │   (Metrics)      │     │ Model Server │
-  └──────────────┘     └──────────────────┘     └──────────────┘
-                                                        │
-                                               ┌────────▼────────┐
-                                               │ AUTO-REMEDIATION │
-                                               │─────────────────│
-                                               │⚡ REROUTE_TRAFFIC│
-                                               │🔄 SWITCH_BACKUP  │
-                                               │📈 SCALE_RESOURCES│
-                                               └─────────────────┘
+```powershell
+Copy-Item .env.example .env
+.\start.ps1
+.\status.ps1
 ```
 
----
+The default demo mode starts 50 synthetic devices. `start.ps1` creates `.env` only when it is missing. Initial image builds download dependencies. Model API can run before a model is loaded; the predictor uses rules on measured fields until ML is available.
 
-## 🚀 Getting Started
+Wait for several storage batches, then train:
 
-### Prerequisites
-
-Make sure the following tools are installed on your machine:
-
-| Tool | Version | Purpose |
-|------|---------|---------|
-| [Docker Desktop](https://www.docker.com/products/docker-desktop/) | Latest | Container runtime |
-| [Python](https://www.python.org/downloads/) | 3.10+ | Core language |
-| [Git](https://git-scm.com/) | Latest | Version control |
-| [kubectl](https://kubernetes.io/docs/tasks/tools/) *(optional)* | Latest | Kubernetes CLI |
-| [Terraform](https://developer.hashicorp.com/terraform/downloads) *(optional)* | Latest | Infrastructure as Code |
-
----
-
-### Stage 1 — Infrastructure Setup
-
-#### Step 1: Clone the Repository
-
-```bash
-git clone https://github.com/RobertinoGladden/aiops-telco.git
-cd aiops-telco
+```powershell
+.\train.ps1
 ```
 
-#### Step 2: Spin Up All Services with Docker Compose
+Training reads up to 200 recent feature files through pagination and deduplicates event IDs. At least 100 complete observations are required. Random Forest needs labels and both classes in train/holdout; use `MODEL_NAME=isolation_forest` when those requirements are unmet. The script restarts Model API to load the selected model.
 
-```bash
-docker compose up -d
-```
+For the console and configured collectors without Docker:
 
-This will start the following services:
-
-| Service | Description | Port |
-|---------|-------------|------|
-| Zookeeper | Kafka coordination | 2181 |
-| Apache Kafka | Message broker | 9092 |
-| MinIO | Object storage | 9000 / 9001 |
-| Prometheus | Metrics scraper | 9090 |
-| Grafana | Visualization | 3000 |
-| MLflow | Experiment tracking | 5000 |
-
-#### Step 3: (Optional) Provision with Terraform
-
-```bash
-cd terraform
-terraform init
-terraform plan
-terraform apply
-```
-
-#### Step 4: (Optional) Configure with Ansible
-
-```bash
-cd ansible
-ansible-playbook -i inventory.yml setup.yml
-```
-
----
-
-### Stage 2 — Data Streaming Pipeline
-
-#### Set Up Python Environment
-
-```bash
+```powershell
 python -m venv venv
-
-# Windows
-venv\Scripts\activate
-
-# Linux / macOS
-source venv/bin/activate
-
-pip install -r requirements.txt
+.\venv\Scripts\python.exe -m pip install -r requirements.txt
+.\console.ps1
 ```
 
-#### Run the Network Device Simulator
+Open **http://127.0.0.1:8082/** and sign in with `INTEGRATION_API_TOKEN` from `.env`. Starting the console alone does not start its infrastructure dependencies.
 
-```bash
-python scripts/log_generator.py
+## Connect field systems
+
+Configure vendor URLs, credentials, project/lab IDs, item keys, interface mappings, and aliases in `.env` and `config/connectors.yml`. Enable the adapters for installations you can access.
+
+```powershell
+.\start.ps1 -Mode field -Orchestration
 ```
 
-This simulates **50 network devices** sending JSON logs to Kafka topic `network-logs` in real-time.
+Field mode stops the Compose simulator. `-Orchestration` adds Airflow and its database. Enable the `telco_data_pipeline` DAG in Airflow; it processes scheduled hourly intervals with S3 pagination while preserving unlabeled data. Set `AIRFLOW_URL` for its health probe, using internal Compose DNS when the Hub runs in Docker.
 
-#### Start the Kafka Consumer
+See the [console and AI guide](docs/AI_CONSOLE.md), [ISP pilot guide](docs/ISP_PILOT.md), [integration reference](docs/INTEGRATIONS.md), and [field experiment guide](docs/FIELD_LAB.md).
 
-```bash
-python consumer/kafka_to_minio.py
+## Service access
+
+| Service | Host URL | Purpose / local access |
+|---|---|---|
+| Strata | http://localhost:8082/ | `INTEGRATION_API_TOKEN` |
+| Operations API | http://localhost:8082/docs | Bearer token on data and mutation endpoints |
+| Model API | http://localhost:8081/docs | `/ready` and `/model/info` expose model readiness |
+| Grafana | http://localhost:3000 | admin / `GRAFANA_ADMIN_PASSWORD` |
+| Prometheus | http://localhost:9090 | Metrics and alert rules |
+| Alertmanager | http://localhost:9093 | Platform alert delivery |
+| Storage worker | http://localhost:9101/metrics | Heartbeats and acknowledgement counters |
+| Detection worker | http://localhost:9102/metrics | Heartbeats, counters, and rule fallbacks |
+| MinIO console | http://localhost:9001 | `MINIO_ACCESS_KEY` / `MINIO_SECRET_KEY` |
+| MLflow | http://localhost:5000 | Model experiments and artifacts |
+| Optional Airflow | http://localhost:8080 | `AIRFLOW_ADMIN_USER` / `AIRFLOW_ADMIN_PASSWORD` |
+| Kafka | 127.0.0.1:29092 | Host-accessible broker |
+
+Host bindings use loopback. Example credentials are for a local lab; replace them for your environment. Use a URL-safe Hub token because Alertmanager inserts it into its YAML configuration at startup.
+
+```powershell
+docker compose logs -f consumer predictor integration-hub
+.\stop.ps1
 ```
 
-Consumed messages are stored in MinIO for downstream processing.
+Stopping preserves volumes. Scripts manage this Compose project and do not terminate arbitrary Python processes by port.
 
----
+## API
 
-### Stage 3 — Machine Learning Model
+All operational data and mutations require Bearer authentication. `/health`, `/metrics`, and the static console are available for local probes and initial access.
 
-#### Train the Anomaly Detection Model
+| Method | Endpoint | Function |
+|---|---|---|
+| GET | /console/overview | Console snapshot and operational metadata |
+| GET | /connectors, /inventory, /topology | Source snapshots |
+| POST | /ingest/metrics | Validate and durably queue 1–500 telemetry events |
+| POST | /detections | Persist observations and incident lifecycle |
+| GET | /incidents, /incidents/{id}/history | Current evidence and transition history |
+| POST | /alerts/alertmanager | Receive firing/resolved platform alerts |
+| GET | /ai/status, /ai/decisions | Provider configuration and latest audits |
+| POST | /incidents/{id}/analyze | On-demand AI analysis |
+| POST | /ai/decisions/{id}/request-review | Recheck evidence and queue operator review |
 
-```bash
-python model/train.py
+Incidents default to three anomalous confirmations and three normal confirmations for recovery. Incomplete telemetry or a changed detection method does not silently clear an open incident. Alertmanager already applies Prometheus `for` durations. Model API rejects missing required features with 422; the predictor continues with rules on available measurements.
+
+## Verify
+
+```powershell
+.\venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+.\venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-Training metrics and artifacts are automatically logged to **MLflow**.
+Tests use vendor fixtures, temporary SQLite databases, actual scikit-learn inference, and mocked provider contracts. See [validation evidence](docs/VALIDATION.md) for tested behavior and live deployment limits.
 
-#### Start the Inference API
+## Deployment scope
 
-```bash
-python api/model_server.py
-```
+For GitHub-triggered Vercel builds and a backend that stays online when your laptop is off, follow [the GitHub remote deployment guide](docs/GITHUB_REMOTE_DEPLOYMENT.md). Vercel Root Directory is `deploy/vercel` and its build command is `node build.mjs`; enable source access outside that directory. For the standalone CLI alternative, see [the online deployment guide](docs/ONLINE_DEPLOYMENT.md) and package with `node scripts/package_vercel.mjs`. `scripts/prepare_online.py` creates separate generated credentials without changing the local `.env`.
 
-The API will be available at `http://localhost:8000`
+This is a single-broker, single-Hub lab/pilot stack. Delivery is at least once; receivers need idempotency. SQLite retains outbox and dedup records, so establish retention before high-volume ingestion. In-memory feature history warms up after restart. Training and incidents deduplicate event IDs; replay can duplicate stored/prediction records.
 
-**Available Endpoints:**
+AI and incident workflows request review; external receivers own authorization, runbooks, prechecks, rollback, and execution verification. The current shared Hub token has no operator identity or RBAC. Multi-tenant isolation, high availability, contractual SLA calculation, and cross-source root-cause correlation remain production roadmap items. Isolation Forest scores are not calibrated anomaly probabilities.
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/predict` | Predict anomaly score for a single device |
-| `POST` | `/predict/batch` | Batch prediction for multiple devices |
-| `GET`  | `/health` | Server health check |
-| `GET`  | `/docs` | Interactive API docs (Swagger UI) |
+Legacy Terraform, Kubernetes, nested Compose, and `ansible/setup.yml` examples remain separate from the root Compose runtime. Do not start conflicting deployment managers on the same service ports. New Compose volumes do not automatically import old datasets; export/import data you intend to retain.
 
----
-
-### Stage 4 — Observability & Auto-Healing
-
-Once the model server and predictor are running, the system will:
-
-1. **Consume** real-time device logs from Kafka
-2. **Send** data to the FastAPI model for anomaly scoring
-3. **Detect** critical anomalies (score = `1.0`)
-4. **Trigger** auto-remediation actions automatically
-
-**Auto-Remediation Actions:**
-
-| Action | Description |
-|--------|-------------|
-| `⚡ REROUTE_TRAFFIC` | Redirect traffic to an alternative network path |
-| `🔄 SWITCH_BACKUP_LINK` | Activate the backup network link |
-| `📈 SCALE_RESOURCES` | Scale up device resources to handle increased load |
-
----
-
-## 🧠 Key Concepts Covered
-
-### Infrastructure as Code (Terraform)
-- Every server, network, and service is defined in code — no manual clicks
-- `terraform plan` previews all changes before they are applied
-- `terraform apply` provisions the entire stack in one command
-- `terraform destroy` tears everything down cleanly and completely
-
-### Configuration Management (Ansible)
-- Playbooks define the desired state of each server declaratively
-- **Idempotent**: run the playbook 10 times, the outcome is always the same
-- Handlers trigger actions only when a meaningful change actually occurs
-
-### Container Orchestration (Kubernetes)
-- Deployments declaratively define how many replicas to keep running
-- Services expose containers to the internal or external network
-- `kubectl` is the unified CLI to interact with any K8s cluster
-
-### Machine Learning Operations (MLflow)
-- Automatic experiment tracking with no manual logging required
-- Model versioning, artifact registry, and metadata storage
-- Reproducible training runs with full parameter and metric snapshots
-
-### Event-Driven Architecture (Kafka)
-- Decouples producers (log generators) from consumers (ML pipeline)
-- Handles high-throughput, real-time data streams reliably at scale
-- Multiple consumers can independently process the same event stream
-
----
-
-## 🛠️ Tech Stack
-
-| Category | Technology | Purpose |
-|----------|------------|---------|
-| **Language** | Python 3.10+ | Core application logic |
-| **Infrastructure** | Terraform | Infrastructure provisioning |
-| **Configuration** | Ansible | Server configuration management |
-| **Orchestration** | Kubernetes | Container orchestration |
-| **Containerization** | Docker + Compose | Local development stack |
-| **Streaming** | Apache Kafka | Real-time log streaming |
-| **Storage** | MinIO | S3-compatible object storage |
-| **ML Framework** | Scikit-learn | Anomaly detection model |
-| **Experiment Tracking** | MLflow | Model versioning & tracking |
-| **API** | FastAPI + Uvicorn | High-performance inference server |
-| **Monitoring** | Prometheus | Metrics collection & alerting |
-| **Visualization** | Grafana | Real-time dashboards |
-
----
-
-## 📁 Key Files Reference
-
-| File | Description |
-|------|-------------|
-| `docker-compose.yml` | Orchestrates all local services |
-| `scripts/log_generator.py` | Simulates 50 network devices |
-| `api/model_server.py` | FastAPI anomaly prediction server |
-| `model/train.py` | Model training with MLflow tracking |
-| `consumer/kafka_to_minio.py` | Kafka → MinIO ingestion pipeline |
-| `grafana/aiops_dashboard.json` | Ready-to-import Grafana dashboard |
-| `terraform/main.tf` | Full infrastructure definition |
-| `ansible/setup.yml` | Server configuration playbook |
-| `CHEATSHEET.ps1` | Quick command reference for Windows |
-
----
-
-## 📄 License
-
-This project was built for learning and portfolio purposes.  
-© 2026 [RobertinoGladden](https://github.com/RobertinoGladden)
-
----
-
-<div align="center">
-  <sub>Built to demonstrate real-world Telco AIOps infrastructure</sub>
-</div>
+Project by Robertino Gladden. Strata branding is a project identity, without trademark or domain-availability claims.

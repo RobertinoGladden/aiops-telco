@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#101216" />
+    <title>Strata — Network Intelligence</title>
+    <link rel="icon" href="/assets/logo.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/assets/app.css" />
+    <script src="/assets/app.js" defer></script>
+  </head>
+  <body>
+    <aside class="sidebar">
+      <a class="brand" href="#overview"
+        ><img src="/assets/logo.svg" alt="" width="34" height="34" /><span
+          >Strata<small>NETWORK INTELLIGENCE</small></span
+        ></a
+      >
+      <div class="workspace">
+        <span class="workspace-icon">S</span
+        ><span>Strata workspace<small>Engineering environment</small></span
+        ><span class="workspace-dot"></span>
+      </div>
+      <div class="nav-label">WORKSPACE</div>
+      <nav aria-label="Main navigation">
+        <button data-view="overview" class="nav-item active">
+          <span class="nav-icon">◫</span>Overview
+        </button>
+        <button data-view="integrations" class="nav-item">
+          <span class="nav-icon">⇄</span>Integrations<span
+            id="nav-integrations"
+            class="nav-count"
+            >5</span
+          >
+        </button>
+        <button data-view="operations" class="nav-item">
+          <span class="nav-icon">⌘</span>Operations
+        </button>
+        <button data-view="incidents" class="nav-item">
+          <span class="nav-icon">⌁</span>Incidents<span
+            id="nav-incidents"
+            class="nav-count"
+            >0</span
+          >
+        </button>
+        <button data-view="intelligence" class="nav-item">
+          <span class="nav-icon">✧</span>AI decision desk<span class="new-label"
+            >AI</span
+          >
+        </button>
+        <button data-view="inventory" class="nav-item">
+          <span class="nav-icon">▤</span>Devices & topology
+        </button>
+        <button data-view="settings" class="nav-item mobile-only">
+          <span class="nav-icon">⚙</span>Settings
+        </button>
+      </nav>
+      <div class="nav-label second-label">SYSTEM</div>
+      <nav aria-label="System navigation">
+        <button data-view="settings" class="nav-item">
+          <span class="nav-icon">⚙</span>Settings</button
+        ><a href="/docs" target="_blank" rel="noopener" class="nav-item"
+          ><span class="nav-icon">↗</span>API reference</a
+        >
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="engine-badge">
+          <span class="status-dot"></span>Evidence before action
+        </div>
+        <p>Every decision connects to evidence and an operator review.</p>
+        <div class="profile">
+          <span class="avatar">EN</span
+          ><span
+            >Engineering workspace<small
+              >Operations platform · v2.2</small
+            ></span
+          >
+        </div>
+      </div>
+    </aside>
+    <div class="shell">
+      <header class="topbar">
+        <div class="breadcrumb">
+          Workspace <span>/</span> <b id="breadcrumb">Overview</b>
+        </div>
+        <label class="search"
+          ><span>⌕</span
+          ><input
+            id="search"
+            type="search"
+            placeholder="Search devices, sources, incidents…"
+            aria-label="Search devices or incidents"
+          /><kbd>/</kbd></label
+        ><button id="session-button" class="button subtle">Hub token</button>
+      </header>
+      <main>
+        <div class="page-header">
+          <div class="hero-copy">
+            <div class="eyebrow">
+              <span class="eyebrow-line"></span> NETWORK OPERATIONS
+              <span class="hero-chip">AI ASSISTED</span>
+            </div>
+            <h1 id="page-title">Your network. One clear view.</h1>
+            <p id="page-subtitle">
+              Connect field systems. Turn measured signals into informed action.
+            </p>
+          </div>
+          <div class="hero-art" aria-hidden="true">
+            <div class="orbital-track track-one"></div>
+            <div class="orbital-track track-two"></div>
+            <div class="point-cloud"></div>
+            <span class="orbital-cross cross-one">+</span
+            ><span class="orbital-cross cross-two">+</span>
+            <span class="orbital-coordinate">01 / OPS</span>
+          </div>
+          <div class="header-actions">
+            <span class="live-label" id="connection"
+              ><span class="status-dot"></span>Not connected</span
+            ><button id="refresh" class="button"><span>↻</span> Refresh</button>
+          </div>
+        </div>
+        <div id="notice" class="notice" role="status">
+          <b>Connect workspace</b
+          ><span
+            >Connect your Integration Hub to access live operational data.</span
+          ><button id="connect" class="button primary">
+            Connect Hub <span>→</span>
+          </button>
+        </div>
+        <div id="error" class="error-banner" role="alert" hidden></div>
+        <section id="view-overview" class="view">
+          <details class="setup-panel">
+            <summary>
+              <span class="setup-title">WORKSPACE SETUP</span
+              ><span id="setup-progress"
+                >Connect your workspace to get started</span
+              ><span class="setup-chevron" aria-hidden="true">⌄</span>
+            </summary>
+            <div id="setup-grid" class="setup-grid"></div>
+          </details>
+          <div class="stats">
+            <article class="stat">
+              <div>Healthy integrations<span class="stat-icon">⇄</span></div>
+              <strong id="stat-connectors">—<small>/ 5</small></strong>
+              <p id="stat-connectors-detail">
+                Waiting for your Integration Hub
+              </p>
+            </article>
+            <article class="stat">
+              <div>Observed devices<span class="stat-icon">▤</span></div>
+              <strong id="stat-devices">—</strong>
+              <p>Unique identities across connected sources</p>
+            </article>
+            <article class="stat">
+              <div>Open incidents<span class="stat-icon">⌁</span></div>
+              <strong id="stat-incidents">—</strong>
+              <p id="stat-incidents-detail">
+                Evidence backed, consecutive confirmations
+              </p>
+            </article>
+            <article class="stat">
+              <div>Delivery backlog<span class="stat-icon">⇢</span></div>
+              <strong id="stat-backlog">—</strong>
+              <p id="stat-backlog-detail">
+                Durable delivery · Kafka & workflow
+              </p>
+            </article>
+          </div>
+          <div class="overview-grid">
+            <section class="panel integrations-panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>Field integrations</h2>
+                  <p>Monitoring, inventory, and network labs.</p>
+                </div>
+                <button class="text-button" data-view="integrations">
+                  View all ↗
+                </button>
+              </div>
+              <div id="connector-grid" class="connector-grid"></div>
+              <div class="panel-foot">
+                <span class="tiny-dot"></span>Live collector snapshots · refresh
+                every 10 seconds
+              </div>
+            </section>
+            <section class="ai-panel">
+              <div class="ai-eyebrow">✧ &nbsp; AI DECISION ENGINE</div>
+              <h2>From signal<br />to next step.</h2>
+              <p>
+                Groq interprets evidence. OpenAI Decisions selects a next step
+                for operator review.
+              </p>
+              <div class="ai-steps">
+                <div>
+                  <span>01</span><b>Incident analysis</b
+                  ><small>Groq · structured output</small>
+                </div>
+                <div>
+                  <span>02</span><b>Typed decisions</b
+                  ><small>OpenAI · choices & probabilities</small>
+                </div>
+                <div>
+                  <span>03</span><b>Operator review</b
+                  ><small>Policy gate · durable workflow</small>
+                </div>
+              </div>
+              <div id="ai-ready-label" class="ai-status">
+                Waiting for provider configuration
+              </div>
+              <button class="button ai-button" data-view="intelligence">
+                Open decision desk <span>↗</span>
+              </button>
+            </section>
+          </div>
+          <section class="pipeline-panel">
+            <div class="pipeline-title">
+              <div>
+                <h2>Operational pipeline</h2>
+                <p>Field → event → detection → decision</p>
+              </div>
+              <span class="pipeline-note">Measured service probes</span>
+            </div>
+            <div id="services" class="services"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <h2>Recent incidents</h2>
+                <p>Prioritize with severity and measured evidence.</p>
+              </div>
+              <button class="text-button" data-view="incidents">
+                Open incident queue ↗
+              </button>
+            </div>
+            <div id="recent-incidents"></div>
+          </section>
+          <div class="data-foot">
+            <span id="updated-at">No snapshot yet</span
+            ><span
+              >Live snapshots · measured evidence · operator reviewed
+              actions</span
+            >
+          </div>
+        </section>
+        <section id="view-integrations" class="view" hidden>
+          <div id="integration-list" class="integration-list"></div>
+          <section class="panel configuration-note">
+            <h2>One identity across your network</h2>
+            <p>
+              NetBox supplies inventory and maintenance context. Aliases in
+              <code>config/connectors.yml</code> map Zabbix, LibreNMS, GNS3, and
+              EVE-NG devices to a shared identity.
+            </p>
+            <button class="text-button" data-view="inventory">
+              Explore devices & topology ↗
+            </button>
+          </section>
+        </section>
+        <section id="view-incidents" class="view" hidden>
+          <div class="section-toolbar">
+            <div class="segmented" id="incident-filters">
+              <button data-filter="all" class="selected">All</button
+              ><button data-filter="open">Open</button
+              ><button data-filter="resolved">Resolved</button
+              ><button data-filter="suppressed">Maintenance</button>
+            </div>
+            <span id="incident-count" class="muted"></span>
+          </div>
+          <section class="panel"><div id="incident-table"></div></section>
+        </section>
+        <section id="view-intelligence" class="view" hidden>
+          <div class="decision-layout">
+            <section class="panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>Provider & policy</h2>
+                  <p>Groq → OpenAI Decisions → review.</p>
+                </div>
+                <span class="tag purple">ON DEMAND</span>
+              </div>
+              <div id="provider-status"></div>
+              <div class="policy-note">
+                <b>Evidence sets the review threshold.</b>
+                <p>
+                  An incident must be open, evidence current, and the device
+                  outside maintenance. Decision confidence must meet your
+                  threshold. Provider failures close the review gate.
+                </p>
+              </div>
+            </section>
+            <section class="panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>Analyze open incidents</h2>
+                  <p>Select an incident to request an AI analysis.</p>
+                </div>
+              </div>
+              <div id="ai-incident-list"></div>
+            </section>
+          </div>
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <h2>Decision audit trail</h2>
+                <p>
+                  Models, probabilities, evidence, and policy checks in one
+                  record.
+                </p>
+              </div>
+              <div class="audit-tools">
+                <span id="decision-count" class="muted">0 decisions</span
+                ><button
+                  id="export-audit"
+                  class="button"
+                  disabled
+                  title="Export up to 100 latest decision audits"
+                >
+                  ↓ Export audit
+                </button>
+              </div>
+            </div>
+            <div id="decision-list"></div>
+          </section>
+        </section>
+        <section id="view-operations" class="view" hidden>
+          <div class="operations-banner">
+            <span class="operations-symbol" aria-hidden="true">◎</span>
+            <div>
+              <span class="eyebrow">OPERATIONS CONTROL</span>
+              <h2>Every layer, in focus.</h2>
+              <p>
+                Trace your field systems, processing workers, and delivery
+                workflow from one workspace.
+              </p>
+            </div>
+            <button id="export-operations" class="button" disabled>
+              ↓ Export snapshot
+            </button>
+          </div>
+          <div id="operation-stats" class="stats"></div>
+          <div class="operations-columns">
+            <section class="panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>Platform health</h2>
+                  <p>Readiness probes and worker heartbeats · cached for 30s</p>
+                </div>
+                <span id="platform-count" class="tag">Awaiting data</span>
+              </div>
+              <div id="platform-grid" class="platform-grid"></div>
+            </section>
+            <section class="panel region-panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>Network regions</h2>
+                  <p>Inventory footprint and open incidents</p>
+                </div>
+              </div>
+              <div id="region-list"></div>
+              <div class="scope-note">
+                Counts describe observed devices. Connect monitoring for service
+                performance and coverage.
+              </div>
+            </section>
+          </div>
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <h2>Delivery ledger</h2>
+                <p>Latest 100 events · acknowledgement, retries, and backoff</p>
+              </div>
+              <span id="delivery-count" class="muted"></span>
+            </div>
+            <div id="delivery-table"></div>
+          </section>
+          <div class="data-foot">
+            <span id="operations-updated">No operational snapshot yet</span
+            ><span
+              >Worker counters reset on process restart · unavailable signals
+              stay unknown</span
+            >
+          </div>
+        </section>
+        <section id="view-inventory" class="view" hidden>
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <h2>Device inventory</h2>
+                <p>
+                  Source observations. Shared device IDs count once in the
+                  overview.
+                </p>
+              </div>
+              <span id="inventory-count" class="muted"></span>
+            </div>
+            <div id="inventory-table"></div>
+          </section>
+          <section class="panel topology-panel">
+            <div class="panel-heading">
+              <div>
+                <h2>Network lab topology</h2>
+                <p>Nodes and connections reported by GNS3 / EVE-NG.</p>
+              </div>
+            </div>
+            <div id="topology"></div>
+          </section>
+        </section>
+        <section id="view-settings" class="view" hidden>
+          <div class="settings-grid">
+            <section class="panel settings-card">
+              <span class="eyebrow">SERVER CONFIGURATION</span>
+              <h2>Enable network intelligence</h2>
+              <p>
+                Set the values in <code>.env</code>, then restart the
+                Integration Hub. Provider credentials stay on the server.
+              </p>
+              <pre>
+AI_ENABLED=true
+GROQ_API_KEY=...
+OPENAI_API_KEY=...
+GROQ_MODEL=openai/gpt-oss-20b
+DECISION_MODEL=gpt-6-luna</pre
+              >
+              <p>
+                Analysis runs when an operator selects <b>Analyze with AI</b>.
+                Selected incident facts are sent to both providers.
+              </p>
+              <button class="button" data-view="intelligence">
+                Check providers →
+              </button>
+            </section>
+            <section class="panel settings-card">
+              <span class="eyebrow">OPERATIONAL WORKFLOW</span>
+              <h2>Connect your operational workflow</h2>
+              <p>
+                Connect n8n, an AWX gateway, or your operations backend through
+                an endpoint that accepts Idempotency-Key.
+              </p>
+              <pre>
+WORKFLOW_ENABLED=true
+WORKFLOW_WEBHOOK_URL=...
+WORKFLOW_WEBHOOK_TOKEN=...</pre
+              >
+              <p>
+                Strata queues a review request. Your operational workflow
+                handles approval and runbook execution.
+              </p>
+              <div class="policy-note">
+                The default 0.85 threshold is a starting point. Calibrate it
+                against labeled field incidents.
+              </div>
+            </section>
+          </div>
+        </section>
+      </main>
+    </div>
+    <dialog id="auth-dialog" aria-labelledby="auth-title">
+      <form id="auth-form">
+        <div class="dialog-heading">
+          <div>
+            <span class="eyebrow">WORKSPACE ACCESS</span>
+            <h2 id="auth-title">Connect your Integration Hub</h2>
+          </div>
+          <button
+            type="button"
+            class="icon-button"
+            id="close-auth"
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+        <p>
+          Use <code>INTEGRATION_API_TOKEN</code> from your server
+          <code>.env</code>.
+        </p>
+        <label class="form-label" for="hub-token">Hub token</label
+        ><input
+          id="hub-token"
+          type="password"
+          autocomplete="off"
+          autofocus
+          required
+          placeholder="Enter your workspace token"
+        />
+        <p class="muted">Your token stays in the memory of this browser tab.</p>
+        <button type="submit" class="button primary full">
+          Connect workspace →
+        </button>
+        <p id="auth-error" class="form-error" role="alert"></p>
+      </form>
+    </dialog>
+    <dialog id="detail-dialog" aria-labelledby="detail-title">
+      <div class="dialog-heading">
+        <div>
+          <span class="eyebrow" id="detail-eyebrow">INCIDENT DETAILS</span>
+          <h2 id="detail-title"></h2>
+        </div>
+        <button id="close-detail" class="icon-button" aria-label="Close">
+          ×
+        </button>
+      </div>
+      <div id="detail-content"></div>
+    </dialog>
+    <div id="toast" class="toast" role="status" hidden></div>
+  </body>
+</html>

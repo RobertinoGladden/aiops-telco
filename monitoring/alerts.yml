@@ -1,0 +1,33 @@
+groups:
+  - name: telco-platform
+    rules:
+      - alert: TelcoServiceDown
+        expr: up{job=~"telco-model-api|telco-integration-hub|kafka|telco-storage-worker|telco-detection-worker"} == 0
+        for: 2m
+        labels: {severity: critical}
+        annotations: {summary: 'AIOps service {{ $labels.job }} is unreachable'}
+      - alert: TelcoConnectorDown
+        expr: telco_connector_up == 0
+        for: 2m
+        labels: {severity: warning}
+        annotations: {summary: 'Connector {{ $labels.connector }} collection is failing'}
+      - alert: TelcoDeliveryBacklog
+        expr: telco_outbox_pending > 100
+        for: 3m
+        labels: {severity: warning}
+        annotations: {summary: 'AIOps outbox has more than 100 pending events'}
+      - alert: TelcoConsumerLag
+        expr: sum by (consumergroup) (kafka_consumergroup_lag{consumergroup=~"telco-.*-v2"}) > 1000
+        for: 3m
+        labels: {severity: warning}
+        annotations: {summary: 'Kafka consumer {{ $labels.consumergroup }} is falling behind'}
+      - alert: TelcoWorkerHeartbeatStale
+        expr: time() - telco_worker_heartbeat_timestamp_seconds > 90
+        for: 2m
+        labels: {severity: critical}
+        annotations: {summary: 'Worker {{ $labels.worker }} is not completing processing cycles'}
+      - alert: TelcoInvalidTelemetry
+        expr: increase(telco_worker_quarantined_events_total[5m]) > 0
+        for: 1m
+        labels: {severity: warning}
+        annotations: {summary: 'Worker {{ $labels.worker }} is quarantining invalid telemetry'}

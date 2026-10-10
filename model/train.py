@@ -1,304 +1,110 @@
-#!/usr/bin/env python3
-"""
-================================================================
-TELCO AIOPS — Tahap 3: ML Training dengan MLflow
-Fungsi: Ambil data dari MinIO → Train model anomaly detection
-        → Simpan model ke MLflow + MinIO
-
-Model: Isolation Forest (unsupervised) + Random Forest (supervised)
-       Keduanya cocok untuk time-series anomaly detection Telco
-
-Jalankan: python model/train.py
-================================================================
-"""
-
-# ─── FIX IPv4 Windows ───────────────────────────────────────
-import socket
-_orig = socket.getaddrinfo
-def _ipv4(host, port, *a, **kw):
-    r = _orig(host, port, *a, **kw)
-    v4 = [x for x in r if x[0] == socket.AF_INET]
-    return v4 if v4 else r
-socket.getaddrinfo = _ipv4
-# ────────────────────────────────────────────────────────────
-
+"""Chronological evaluation with train-only scaling and optional reviewed labels."""
 import io
 import logging
-import warnings
-warnings.filterwarnings("ignore")
-
-import numpy as np
-import pandas as pd
+import os
+from datetime import datetime, timezone
 import boto3
-from botocore.client import Config
+import joblib
 import mlflow
 import mlflow.sklearn
+import pandas as pd
+from botocore.client import Config
 from sklearn.ensemble import IsolationForest, RandomForestClassifier
+from sklearn.metrics import f1_score, precision_score, recall_score, roc_auc_score
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import (
-    classification_report, f1_score,
-    precision_score, recall_score, roc_auc_score
-)
-import joblib
+from aiops.config import settings
+from aiops.features import FEATURE_COLS
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s"
-)
 log = logging.getLogger(__name__)
 
-# ─── KONFIGURASI ────────────────────────────────────────────
-MINIO_ENDPOINT   = "http://127.0.0.1:9000"
-MINIO_ACCESS_KEY = "telcoadmin"
-MINIO_SECRET_KEY = "telcopassword123"
-BUCKET_PROC      = "telco-processed-data"
-BUCKET_MODELS    = "telco-models"
 
-MLFLOW_TRACKING_URI = "http://127.0.0.1:5000"
-
-# Features yang dipakai model
-FEATURE_COLS = [
-    "latency_ms", "packet_loss_pct", "cpu_usage_pct",
-    "throughput_mbps", "signal_strength_dbm", "error_rate",
-    "latency_ms_rolling5", "packet_loss_pct_rolling5",
-    "cpu_usage_pct_rolling5", "latency_ms_zscore",
-    "cpu_usage_pct_zscore", "hour", "dayofweek", "is_critical",
-]
-LABEL_COL = "is_anomaly"
+def client():
+    return boto3.client("s3", endpoint_url=settings.minio_endpoint, aws_access_key_id=settings.minio_access_key,
+        aws_secret_access_key=settings.minio_secret_key, region_name="us-east-1", config=Config(signature_version="s3v4"))
 
 
-# ─── LOAD DATA DARI MINIO ───────────────────────────────────
-def load_data_from_minio() -> pd.DataFrame:
-    """Ambil semua file Parquet dari MinIO dan gabungkan."""
-    client = boto3.client(
-        "s3",
-        endpoint_url=MINIO_ENDPOINT,
-        aws_access_key_id=MINIO_ACCESS_KEY,
-        aws_secret_access_key=MINIO_SECRET_KEY,
-        config=Config(signature_version="s3v4"),
-        region_name="us-east-1",
-    )
-
-    log.info("📥 Mengambil data dari MinIO...")
-    response = client.list_objects_v2(
-        Bucket=BUCKET_PROC, Prefix="features/"
-    )
-    files = response.get("Contents", [])
-
+def load_data_from_minio():
+    s3 = client()
+    files = [item for page in s3.get_paginator("list_objects_v2").paginate(Bucket=settings.processed_bucket, Prefix="features/")
+             for item in page.get("Contents", []) if item["Key"].endswith(".parquet")]
+    files = sorted(files, key=lambda item: item["LastModified"])[-200:]
     if not files:
-        raise RuntimeError(
-            "❌ Tidak ada data di MinIO!\n"
-            "   Pastikan kafka_to_minio.py sudah jalan minimal 1 menit."
-        )
-
-    dfs = []
-    for f in files:
-        try:
-            obj = client.get_object(Bucket=BUCKET_PROC, Key=f["Key"])
-            dfs.append(pd.read_parquet(io.BytesIO(obj["Body"].read())))
-        except Exception as e:
-            log.warning(f"Skip {f['Key']}: {e}")
-
-    df = pd.concat(dfs, ignore_index=True)
-    log.info(f"✅ Data loaded: {len(df):,} baris, {len(df.columns)} kolom")
-    log.info(f"   Anomali: {df[LABEL_COL].sum():,} ({df[LABEL_COL].mean()*100:.1f}%)")
-    return df
+        raise RuntimeError("No processed data yet; run the consumer and collect telemetry first")
+    frames = [pd.read_parquet(io.BytesIO(s3.get_object(Bucket=settings.processed_bucket, Key=item["Key"])["Body"].read())) for item in files]
+    df = pd.concat(frames, ignore_index=True)
+    if "event_id" in df:
+        df = df.drop_duplicates("event_id")
+    df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
+    return df.sort_values("timestamp")
 
 
-# ─── PREPROCESSING ──────────────────────────────────────────
-def preprocess(df: pd.DataFrame):
-    """Siapkan features dan label untuk training."""
-    # Pilih hanya kolom yang tersedia
-    available = [c for c in FEATURE_COLS if c in df.columns]
-    missing   = [c for c in FEATURE_COLS if c not in df.columns]
-    if missing:
-        log.warning(f"Kolom tidak tersedia (skip): {missing}")
-
-    X = df[available].fillna(0)
-    y = df[LABEL_COL].astype(int)
-
-    log.info(f"   Features dipakai: {available}")
-    log.info(f"   Shape: X={X.shape}, y={y.shape}")
-
-    # Normalisasi
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
-
-    return X_scaled, y.values, scaler, available
+def temporal_split(df, features):
+    complete = df.dropna(subset=features).sort_values("timestamp")
+    if len(complete) < 100:
+        raise ValueError(f"Need at least 100 complete observations; found {len(complete)}")
+    split_time = complete.iloc[int(len(complete) * 0.8)]["timestamp"]
+    train = complete[complete["timestamp"] < split_time]
+    test = complete[complete["timestamp"] >= split_time]
+    if train.empty or test.empty:
+        raise ValueError("Training requires observations across multiple timestamps")
+    scaler = StandardScaler().fit(train[features])
+    return train, test, scaler, scaler.transform(train[features]), scaler.transform(test[features])
 
 
-# ─── TRAIN: ISOLATION FOREST (Unsupervised) ─────────────────
-def train_isolation_forest(X_train, X_test, y_test):
-    """
-    Isolation Forest: deteksi anomali TANPA label.
-    Berguna untuk kasus baru yang belum pernah dilihat model.
-    """
-    log.info("\n🌲 Training Isolation Forest...")
-
-    model = IsolationForest(
-        n_estimators=100,
-        contamination=0.15,   # Estimasi 15% anomali
-        random_state=42,
-        n_jobs=-1,
-    )
-    model.fit(X_train)
-
-    # Prediksi: -1 = anomali, 1 = normal → konversi ke 0/1
-    y_pred = (model.predict(X_test) == -1).astype(int)
-
-    f1  = f1_score(y_test, y_pred)
-    prec = precision_score(y_test, y_pred)
-    rec  = recall_score(y_test, y_pred)
-
-    log.info(f"   F1 Score  : {f1:.4f}")
-    log.info(f"   Precision : {prec:.4f}")
-    log.info(f"   Recall    : {rec:.4f}")
-
-    return model, {"f1": f1, "precision": prec, "recall": rec}
+def save_model_to_minio(model, scaler, features, model_name, metadata):
+    buffer = io.BytesIO()
+    joblib.dump({"model": model, "scaler": scaler, "features": features, "metadata": metadata}, buffer)
+    content = buffer.getvalue()
+    s3 = client()
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    s3.put_object(Bucket=settings.models_bucket, Key=f"versions/{model_name}/{stamp}.pkl", Body=content)
+    s3.put_object(Bucket=settings.models_bucket, Key=f"latest/{model_name}.pkl", Body=content)
 
 
-# ─── TRAIN: RANDOM FOREST (Supervised) ──────────────────────
-def train_random_forest(X_train, X_test, y_train, y_test, feature_names):
-    """
-    Random Forest: deteksi anomali DENGAN label.
-    Lebih akurat tapi butuh data berlabel.
-    """
-    log.info("\n🌳 Training Random Forest Classifier...")
-
-    model = RandomForestClassifier(
-        n_estimators=100,
-        max_depth=10,
-        class_weight="balanced",   # Handle imbalanced data
-        random_state=42,
-        n_jobs=-1,
-    )
-    model.fit(X_train, y_train)
-
-    y_pred = model.predict(X_test)
-    y_prob = model.predict_proba(X_test)[:, 1]
-
-    f1   = f1_score(y_test, y_pred)
-    prec = precision_score(y_test, y_pred)
-    rec  = recall_score(y_test, y_pred)
-    auc  = roc_auc_score(y_test, y_prob)
-
-    log.info(f"   F1 Score  : {f1:.4f}")
-    log.info(f"   Precision : {prec:.4f}")
-    log.info(f"   Recall    : {rec:.4f}")
-    log.info(f"   ROC-AUC   : {auc:.4f}")
-
-    # Feature importance — berguna untuk interpretasi model
-    importance = pd.Series(
-        model.feature_importances_, index=feature_names
-    ).sort_values(ascending=False)
-    log.info(f"\n   Top 5 features penting:")
-    for feat, imp in importance.head(5).items():
-        bar = "█" * int(imp * 40)
-        log.info(f"   {feat:<35} {bar} {imp:.4f}")
-
-    return model, {
-        "f1": f1, "precision": prec, "recall": rec, "roc_auc": auc
-    }
-
-
-# ─── SIMPAN MODEL KE MINIO ──────────────────────────────────
-def save_model_to_minio(model, scaler, feature_names, model_name):
-    """Simpan model ke MinIO agar bisa diakses API server."""
-    client = boto3.client(
-        "s3",
-        endpoint_url=MINIO_ENDPOINT,
-        aws_access_key_id=MINIO_ACCESS_KEY,
-        aws_secret_access_key=MINIO_SECRET_KEY,
-        config=Config(signature_version="s3v4"),
-        region_name="us-east-1",
-    )
-
-    # Simpan model
-    buf = io.BytesIO()
-    joblib.dump({"model": model, "scaler": scaler, "features": feature_names}, buf)
-    buf.seek(0)
-    key = f"latest/{model_name}.pkl"
-    client.put_object(Bucket=BUCKET_MODELS, Key=key, Body=buf)
-    log.info(f"💾 Model disimpan → {BUCKET_MODELS}/{key}")
-
-
-# ─── MAIN ───────────────────────────────────────────────────
 def main():
-    log.info("=" * 60)
-    log.info("TELCO AIOPS — Tahap 3: ML Training")
-    log.info("=" * 60)
-
-    # 1. Load data
     df = load_data_from_minio()
-
-    # 2. Preprocessing
-    X, y, scaler, feature_names = preprocess(df)
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42, stratify=y
-    )
-    log.info(f"\n📊 Split: train={len(X_train):,}  test={len(X_test):,}")
-
-    # 3. Setup MLflow
-    mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
-    
-    # Delete existing experiment if it exists to reset artifact location
-    try:
-        experiment = mlflow.get_experiment_by_name("telco-anomaly-detection")
-        if experiment:
-            mlflow.delete_experiment(experiment.experiment_id)
-            log.info("🗑️  Deleted existing experiment")
-    except Exception as e:
-        log.warning(f"Could not delete experiment: {e}")
-    
+    features = [name.strip() for name in os.getenv("MODEL_FEATURES", ",".join(FEATURE_COLS)).split(",")]
+    if not features or any(name not in FEATURE_COLS for name in features):
+        raise ValueError("MODEL_FEATURES contains unsupported feature names")
+    train, test, scaler, X_train, X_test = temporal_split(df, features)
+    metadata = {"schema_version": "1.0", "feature_window_samples": 5, "zscore_window_samples": 50,
+        "trained_at": datetime.now(timezone.utc).isoformat(), "train_rows": len(train), "test_rows": len(test),
+        "train_end": str(train["timestamp"].max()), "test_start": str(test["timestamp"].min()),
+        "sources": sorted(df["source"].dropna().unique().tolist()), "evaluation": "chronological"}
+    mlflow.set_tracking_uri(settings.mlflow_uri)
     mlflow.set_experiment("telco-anomaly-detection-v2")
-
-    # ── Run 1: Isolation Forest ──────────────────────────────
-    with mlflow.start_run(run_name="isolation_forest"):
-        mlflow.log_param("model_type",     "IsolationForest")
-        mlflow.log_param("n_estimators",   100)
-        mlflow.log_param("contamination",  0.15)
-        mlflow.log_param("train_samples",  len(X_train))
-        mlflow.log_param("features",       feature_names)
-
-        iso_model, iso_metrics = train_isolation_forest(
-            X_train, X_test, y_test
-        )
-
-        mlflow.log_metrics(iso_metrics)
-        mlflow.sklearn.log_model(iso_model, "isolation_forest")
-
-        save_model_to_minio(iso_model, scaler, feature_names, "isolation_forest")
-        log.info(f"✅ MLflow run selesai: {mlflow.active_run().info.run_id}")
-
-    # ── Run 2: Random Forest ─────────────────────────────────
-    with mlflow.start_run(run_name="random_forest"):
-        mlflow.log_param("model_type",     "RandomForestClassifier")
-        mlflow.log_param("n_estimators",   100)
-        mlflow.log_param("max_depth",      10)
-        mlflow.log_param("class_weight",   "balanced")
-        mlflow.log_param("train_samples",  len(X_train))
-        mlflow.log_param("features",       feature_names)
-
-        rf_model, rf_metrics = train_random_forest(
-            X_train, X_test, y_train, y_test, feature_names
-        )
-
-        mlflow.log_metrics(rf_metrics)
-        mlflow.sklearn.log_model(rf_model, "random_forest")
-
-        save_model_to_minio(rf_model, scaler, feature_names, "random_forest")
-        log.info(f"✅ MLflow run selesai: {mlflow.active_run().info.run_id}")
-
-    log.info("\n" + "=" * 60)
-    log.info("🎉 Training selesai!")
-    log.info(f"   Isolation Forest F1 : {iso_metrics['f1']:.4f}")
-    log.info(f"   Random Forest F1    : {rf_metrics['f1']:.4f}")
-    log.info(f"   Random Forest AUC   : {rf_metrics['roc_auc']:.4f}")
-    log.info("\n▶  Buka MLflow UI : http://localhost:5000")
-    log.info("▶  Lanjut jalankan: python api/model_server.py")
-    log.info("=" * 60)
+    models = [("isolation_forest", IsolationForest(n_estimators=100, contamination=0.15, random_state=42))]
+    labeled_train = train.get("is_anomaly", pd.Series(index=train.index, dtype=object)).notna()
+    labeled_test = test.get("is_anomaly", pd.Series(index=test.index, dtype=object)).notna()
+    if labeled_train.sum() >= 20 and labeled_test.sum() >= 10 and train.loc[labeled_train, "is_anomaly"].nunique() == 2 and test.loc[labeled_test, "is_anomaly"].nunique() == 2:
+        models.append(("random_forest", RandomForestClassifier(n_estimators=100, max_depth=10, class_weight="balanced", random_state=42)))
+    else:
+        log.warning("Random Forest skipped: insufficient labels/classes in chronological train/test; use MODEL_NAME=isolation_forest")
+    for name, model in models:
+        with mlflow.start_run(run_name=name):
+            mlflow.log_params({"model_type": type(model).__name__, "features": features, "evaluation": "chronological", "train_samples": len(train)})
+            if name == "random_forest":
+                model.fit(X_train[labeled_train.values], train.loc[labeled_train, "is_anomaly"].astype(int))
+            else:
+                model.fit(X_train)
+            if labeled_test.sum():
+                truth = test.loc[labeled_test, "is_anomaly"].astype(int)
+                test_values = X_test[labeled_test.values]
+                predicted = model.predict(test_values)
+                if name == "isolation_forest":
+                    predicted = (predicted == -1).astype(int)
+                metrics = {"f1": f1_score(truth, predicted, zero_division=0),
+                           "precision": precision_score(truth, predicted, zero_division=0),
+                           "recall": recall_score(truth, predicted, zero_division=0)}
+                if name == "random_forest" and truth.nunique() == 2:
+                    metrics["roc_auc"] = roc_auc_score(truth, model.predict_proba(test_values)[:, 1])
+                mlflow.log_metrics(metrics)
+                log.info("%s held-out metrics: %s", name, metrics)
+            mlflow.sklearn.log_model(model, name=name)
+            save_model_to_minio(model, scaler, features, name, metadata)
+            log.info("Saved %s with %s measured features", name, len(features))
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     main()

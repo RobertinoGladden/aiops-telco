@@ -1,0 +1,14 @@
+venv
+.venv
+.vercel
+.env
+.env.online
+deploy/secrets
+dist
+.git
+logs
+data
+__pycache__
+*.pyc
+demo.gif
+tests

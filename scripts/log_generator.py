@@ -12,15 +12,18 @@ import time
 import random
 import math
 import logging
+import os
 from datetime import datetime, timezone
 from dataclasses import dataclass, asdict
 from typing import Generator
 from kafka import KafkaProducer
+from aiops.config import settings
+from aiops.contracts import NetworkMetric
 
 # ─── KONFIGURASI ────────────────────────────────────────────
-KAFKA_BOOTSTRAP_SERVERS = ["127.0.0.1:29092"]
-KAFKA_TOPIC = "telco.network.metrics"
-SEND_INTERVAL_SECONDS = 1.0  # Kirim data setiap 1 detik
+KAFKA_BOOTSTRAP_SERVERS = settings.kafka_servers.split(",")
+KAFKA_TOPIC = settings.metrics_topic
+SEND_INTERVAL_SECONDS = float(os.getenv("SEND_INTERVAL", "1.0"))
 
 logging.basicConfig(
     level=logging.INFO,
@@ -102,7 +105,7 @@ class NetworkDevice:
             "cpu_usage_pct": max(0, min(100, round(cpu_usage_pct, 1))),
             "throughput_mbps": max(0, round(throughput_mbps, 2)),
             "signal_strength_dbm": round(signal_strength_dbm, 1),
-            "error_rate": max(0, round(error_rate, 5)),
+            "error_rate": max(0, min(1, round(error_rate, 5))),
             "active_connections": int(random.gauss(
                 500 * traffic_factor, 50
             )),
@@ -171,7 +174,7 @@ def run_generator():
     log.info(f"   Topic  : {KAFKA_TOPIC}")
     log.info(f"   Server : {KAFKA_BOOTSTRAP_SERVERS}")
 
-    devices = create_device_fleet(num_devices=50)
+    devices = create_device_fleet(num_devices=int(os.getenv("NUM_DEVICES", "50")))
     producer = create_producer()
 
     total_sent = 0
@@ -183,7 +186,7 @@ def run_generator():
 
             # Generate & kirim metrics dari semua perangkat
             for device in devices:
-                metrics = device.generate_metrics()
+                metrics = NetworkMetric.model_validate(device.generate_metrics()).model_dump(mode="json")
 
                 producer.send(
                     topic=KAFKA_TOPIC,

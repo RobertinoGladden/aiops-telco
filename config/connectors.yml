@@ -1,0 +1,48 @@
+# Set the corresponding *_ENABLED=true and credentials in .env.
+# Stable device names should match NetBox; aliases override remote names.
+aliases: {}
+# Example: {"zabbix:10084": "core-jkt-01", "gns3:node-uuid": "core-jkt-01"}
+connectors:
+  - name: netbox
+    kind: netbox
+    enabled_env: NETBOX_ENABLED
+    url_env: NETBOX_URL
+    token_env: NETBOX_TOKEN
+    auth_scheme: auto
+  - name: zabbix
+    kind: zabbix
+    enabled_env: ZABBIX_ENABLED
+    url_env: ZABBIX_URL
+    token_env: ZABBIX_TOKEN
+    max_age_seconds: 300
+    # Use exact item keys from your templates. Units converted to canonical units.
+    metric_map:
+      latency_ms: {key: icmppingsec, scale: 1000}
+      packet_loss_pct: {key: icmppingloss, scale: 1}
+      cpu_usage_pct: {key: system.cpu.util, scale: 1}
+      throughput_mbps: {key: aiops.throughput.bps, scale: 0.000001}
+      signal_strength_dbm: {key: aiops.signal.dbm, scale: 1}
+      error_rate: {key: aiops.error.ratio, scale: 1}
+  - name: librenms
+    kind: librenms
+    enabled_env: LIBRENMS_ENABLED
+    url_env: LIBRENMS_URL
+    token_env: LIBRENMS_TOKEN
+    auth_scheme: bearer
+    max_age_seconds: 600
+    # Set to selected uplink ifNames to avoid double counting access + trunk traffic.
+    interfaces: []
+  - name: gns3
+    kind: gns3
+    enabled_env: GNS3_ENABLED
+    url_env: GNS3_URL
+    username_env: GNS3_USERNAME
+    password_env: GNS3_PASSWORD
+    project_id_env: GNS3_PROJECT_ID
+  - name: eve-ng
+    kind: eve_ng
+    enabled_env: EVE_NG_ENABLED
+    url_env: EVE_NG_URL
+    username_env: EVE_NG_USERNAME
+    password_env: EVE_NG_PASSWORD
+    lab_path_env: EVE_NG_LAB_PATH

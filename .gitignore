@@ -1,5 +1,6 @@
 # Python
 venv/
+.venv/
 __pycache__/
 *.pyc
 *.pyo
@@ -7,6 +8,7 @@ __pycache__/
 .Python
 *.egg-info/
 dist/
+deploy/vercel/public/
 build/
 
 # Logs
@@ -24,6 +26,14 @@ terraform/.terraform.lock.hcl
 # Runtime
 .aiops_pids.json
 mlruns/
+.env
+.env.online
+.env.local
+.env.*.local
+.vercel/
+deploy/secrets/
+data/
+.test-artifacts/
 
 # OS
 .DS_Store

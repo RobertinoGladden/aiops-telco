@@ -1,0 +1,77 @@
+# Use alongside the root Compose file. Compose 2.24.4+ is required for !override/!reset.
+x-online-app: &online-app
+  env_file: !override [.env.online]
+  security_opt: [no-new-privileges:true]
+  cap_drop: [ALL]
+
+services:
+  kafka:
+    ports: !reset []
+  minio:
+    ports: !reset []
+  minio-init:
+    <<: *online-app
+  mlflow:
+    <<: *online-app
+    ports: !reset []
+  model-api:
+    <<: *online-app
+    ports: !reset []
+  integration-hub:
+    <<: *online-app
+    ports: !reset []
+    environment:
+      STRATA_DEPLOYMENT_MODE: online
+      CF_ACCESS_TEAM_DOMAIN: ${CF_ACCESS_TEAM_DOMAIN:?Set your Cloudflare Access team domain}
+      CF_ACCESS_AUDIENCE: ${CF_ACCESS_AUDIENCE:?Set your Access application audience}
+  consumer:
+    <<: *online-app
+    ports: !reset []
+  predictor:
+    <<: *online-app
+    ports: !reset []
+  simulator:
+    <<: *online-app
+  trainer:
+    <<: *online-app
+  prometheus:
+    ports: !reset []
+  alertmanager:
+    ports: !reset []
+  grafana:
+    ports: !reset []
+  airflow-webserver:
+    ports: !reset []
+  gateway:
+    image: nginx:stable-alpine
+    entrypoint: [nginx]
+    command: [-g, 'daemon off;']
+    user: '101:101'
+    read_only: true
+    tmpfs: ['/tmp:uid=101,gid=101,mode=1770']
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    volumes: ['./deploy/gateway.conf:/etc/nginx/nginx.conf:ro']
+    networks: [default, edge]
+    depends_on:
+      integration-hub: {condition: service_healthy}
+    restart: unless-stopped
+  cloudflared:
+    image: cloudflare/cloudflared:2026.10.0
+    # Match the secret file owner on Linux; local Compose file secrets retain host ownership.
+    user: '${STRATA_TUNNEL_UID:-1000}:${STRATA_TUNNEL_GID:-1000}'
+    command: [tunnel, --no-autoupdate, run, --token-file, /run/secrets/cloudflare_tunnel_token]
+    secrets: [cloudflare_tunnel_token]
+    networks: [edge]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    depends_on: [gateway]
+    restart: unless-stopped
+
+networks:
+  edge: {}
+
+secrets:
+  cloudflare_tunnel_token:
+    file: ./deploy/secrets/cloudflare_tunnel_token

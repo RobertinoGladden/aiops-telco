@@ -1,0 +1,7 @@
+{
+  "name": "strata-console",
+  "private": true,
+  "type": "module",
+  "scripts": {"build": "node build.mjs"},
+  "engines": {"node": "22.x"}
+}
