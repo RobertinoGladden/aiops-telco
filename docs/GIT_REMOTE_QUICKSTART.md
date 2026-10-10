@@ -2,7 +2,7 @@
 
 This procedure applies to the current ZIP-downloaded project, which has no project-local `.git`, and to the existing GitHub repository's main branch. It preserves the existing remote history and current local application files.
 
-No VPS or paid hosting account is needed to upload the source. Publishing it to GitHub does not run the application. With the current zero cloud budget, Vercel can host the console preview; the existing full backend still needs remote compute or a separate implementation of the lighter testing architecture described in [the deployment guide](GITHUB_REMOTE_DEPLOYMENT.md#testing-with-no-paid-cloud-budget). Vercel Hobby is limited to personal, non-commercial use.
+No VPS or paid hosting account is needed to upload the source. Publishing it to GitHub does not run the application. The selected target retains Kafka, MinIO and actual field telemetry: see [the full-stack field deployment guide](FULL_STACK_FIELD_DEPLOYMENT.md) for the free cloud VM candidate and remaining validation. Vercel alone hosts the console/proxy, not the continuous backend. Vercel Hobby is limited to personal, non-commercial use.
 
 ```powershell
 cd C:\Users\lapt1\Downloads\aiops-telco-main

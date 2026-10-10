@@ -1,0 +1,64 @@
+---
+- name: Apply or remove measured impairment on a dedicated Linux lab link
+  hosts: aiops_lab
+  become: true
+  gather_facts: false
+  vars:
+    impairment_state: present
+    delay_ms: 250
+    loss_pct: 12
+  tasks:
+    - name: Validate lab target and bounded inputs
+      ansible.builtin.assert:
+        that:
+          - aiops_lab | default(false) | bool
+          - impairment_interface is defined
+          - impairment_interface is match('^[a-zA-Z0-9_.-]+$')
+          - impairment_state in ['present', 'absent']
+          - delay_ms | int >= 0
+          - delay_ms | int <= 2000
+          - loss_pct | float >= 0
+          - loss_pct | float <= 50
+        fail_msg: Use a dedicated lab data interface with aiops_lab=true.
+
+    - name: Read current root qdisc
+      ansible.builtin.command:
+        argv: [tc, -j, qdisc, show, dev, '{{ impairment_interface }}']
+      register: qdisc_result
+      changed_when: false
+
+    - name: Determine root qdisc
+      ansible.builtin.set_fact:
+        root_qdisc: '{{ (qdisc_result.stdout | from_json | selectattr("root", "defined") | selectattr("root") | list | first) | default({}) }}'
+
+    - name: Refuse to overwrite an existing custom qdisc
+      ansible.builtin.assert:
+        that:
+          - root_qdisc.get('kind', 'noqueue') in ['noqueue', 'pfifo_fast', 'fq_codel', 'netem']
+          - root_qdisc.get('kind') != 'netem' or root_qdisc.get('handle') == '7a10:'
+        fail_msg: Existing custom qdisc is outside this experiment.
+
+    - name: Apply lab delay and loss
+      ansible.builtin.command:
+        argv: [tc, qdisc, replace, dev, '{{ impairment_interface }}', root, handle, '7a10:', netem, delay, '{{ delay_ms | int }}ms', loss, '{{ loss_pct | float }}%']
+      when: impairment_state == 'present'
+      changed_when: true
+
+    - name: Remove this experiment's impairment
+      ansible.builtin.command:
+        argv: [tc, qdisc, del, dev, '{{ impairment_interface }}', root, handle, '7a10:']
+      when:
+        - impairment_state == 'absent'
+        - root_qdisc.get('kind') == 'netem'
+        - root_qdisc.get('handle') == '7a10:'
+      changed_when: true
+
+    - name: Read resulting qdisc as experiment evidence
+      ansible.builtin.command:
+        argv: [tc, -j, qdisc, show, dev, '{{ impairment_interface }}']
+      register: resulting_qdisc
+      changed_when: false
+
+    - name: Display experiment evidence
+      ansible.builtin.debug:
+        var: resulting_qdisc.stdout
