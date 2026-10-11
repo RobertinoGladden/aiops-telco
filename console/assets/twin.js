@@ -2,6 +2,7 @@
 (() => {
   const M = window.StrataTwin;
   const D = window.StrataDevices;
+  const V = window.StrataMonitor;
   let nativePack, generatedConfig, plans = {}, drafts = {}, rfSite = "";
   const key = "strata:twin:3";
   const checkpointKey = "strata:twin:checkpoints:3";
@@ -56,15 +57,18 @@
     document.querySelectorAll("[data-twin-panel]").forEach((panel) => {panel.hidden = panel.dataset.twinPanel !== name; panel.classList.toggle("twin-panel-enter", !panel.hidden);});
   }
   function stats() {
-    const open = state.incidents.filter((i) => i.state === "open").length;
     const verified = state.jobs.filter((j) => j.state === "verified").length;
-    const fleet = Object.values(state.sites);
-    const items = [[`${fleet.filter(s=>M.healthy(s.metrics)).length}/${fleet.length}`, "Sites within service thresholds", `${Object.keys(state.regions).length} regions · transport + radio + power`],
-      [open, "Open modeled incidents", "Three breaches confirm an incident"],
-      [M.lag(state, "storage"), "Storage consumer lag", `${state.outbox.length} events waiting in outbox`],
-      [state.cases.filter(c=>c.state==="solved").length, "Engineering cases solved", `${verified} verified change${verified===1?"":"s"} · scoped recovery evidence`]];
-    $t("#twin-stats").replaceChildren(...items.map(([count, title, hint]) => {
-      const card = node("article", "twin-metric"); card.append(node("strong", "", count), node("b", "", title), node("small", "", hint)); return card;
+    const summary=V.snapshot(state);
+    const items=[
+      [`${summary.healthy}/${summary.total}`,"Service healthy",`${Object.keys(state.regions).length} regions · calculated conditions`,summary.unknown?"unknown":summary.degraded?"warning":"healthy"],
+      [summary.critical,"Critical sites","Transport or radio unavailable",summary.critical?"critical":"healthy"],
+      [summary.warning,"Warning sites","Threshold breach / active containment",summary.warning?"warning":"healthy"],
+      [summary.delivered===null?"—":summary.delivered.toLocaleString("en-US"),"Delivered throughput",`${summary.offered.toLocaleString("en-US")} Mbps offered`,summary.delivered===null?"unknown":"info"],
+      [summary.detectionLag+summary.outbox,"Detection backlog",`${summary.outbox} unsent · ${summary.detectionLag} awaiting detection`,summary.pipeline?"healthy":"stale"],
+      [summary.solved,"Cases resolved",`${summary.activeCases} active · ${verified} verified changes`,summary.activeCases?"warning":"healthy"],
+    ];
+    $t("#twin-stats").replaceChildren(...items.map(([count,title,hint,status])=>{
+      const card=node("article",`twin-metric ${status}`);card.append(node("b","",title),node("strong","",count),node("small","",hint));return card;
     }));
     const experiment = state.experiments.at(-1);
     const currentCase = state.cases.at(-1);
@@ -91,7 +95,8 @@
       const x=regions.length===1?330:55+i*550/(regions.length-1),members=fleet.filter(s=>s.region===region.id);
       for(const [path,cx] of [["primary",225],["backup",435]]) {
         const active=members.some(s=>s.selected===path&&s.links[path].up);
-        svg.append(svgNode("path",{d:`M${cx} 53 C${cx} 85 ${x} 85 ${x} 112`,class:`twin-wire${active?" selected":""}`}));
+        const degraded=members.some(s=>V.severity(s.metrics)==="critical");
+        svg.append(svgNode("path",{d:`M${cx} 53 C${cx} 85 ${x} 85 ${x} 112`,class:`twin-wire ${path}${active?" selected":""}${degraded?" impaired":""}`}));
       }
       svg.append(svgNode("rect",{x:x-40,y:112,width:80,height:46,rx:10,class:`twin-node${target.region===region.id?" target":""}`}),
         svgNode("text",{x,y:131,"text-anchor":"middle",class:"twin-svg-title"},region.id),svgNode("text",{x,y:146,"text-anchor":"middle",class:"twin-svg-small"},`${region.capacity} Mbps`));
@@ -104,13 +109,13 @@
     const groups=regions.filter(r=>visible.some(s=>s.region===r.id)).map(region=> {
       const group=node("article","twin-region");const members=fleet.filter(s=>s.region===region.id),head=node("div","twin-region-heading");
       head.append(node("b","",region.name),node("span","",`${members.filter(s=>M.healthy(s.metrics)).length}/${members.length} healthy`));
-      const demand=members.reduce((n,s)=>n+s.demand,0),bar=node("div","twin-capacity-bar"),fill=node("span");fill.style.width=`${Math.min(100,demand/region.capacity*100)}%`;bar.append(fill);
+      const demand=members.reduce((n,s)=>n+s.demand,0),bar=node("div",`twin-capacity-bar ${V.capacityStatus(V.utilization(demand,region.capacity))}`),fill=node("span");fill.style.width=`${Math.min(100,demand/region.capacity*100)}%`;bar.append(fill);
       const tiles=node("div","twin-site-tiles");
       for(const site of visible.filter(s=>s.region===region.id)) {
         const m=site.metrics,healthy=M.healthy(m),tile=button("",()=>selectSite(site.id),false,`twin-select-${site.id}`);
-        tile.className=`twin-site-tile${site.id===selected()?" selected":""}${healthy?"":" degraded"}`;tile.setAttribute("aria-pressed",String(site.id===selected()));
-        tile.setAttribute("aria-label",`${site.id}, ${healthy?"healthy":"degraded"}, select site`);
-        const top=node("span","twin-tile-top");top.append(node("b","",site.id),node("i",healthy?"twin-state-dot":"twin-state-dot degraded"));
+        const severity=V.severity(m);tile.className=`twin-site-tile ${severity}${site.id===selected()?" selected":""}${healthy?"":" degraded"}`;tile.setAttribute("aria-pressed",String(site.id===selected()));
+        tile.setAttribute("aria-label",`${site.id}, ${severity}, select site`);
+        const top=node("span","twin-tile-top");top.append(node("b","",site.id),node("span",`site-status-label ${severity}`,label(severity)));
         tile.append(top,node("small","",site.name),node("span","twin-tile-metrics",`${number(m?.latencyMs," ms")} / ${number(m?.lossPct,"% loss")}`),node("em","",healthy?`${site.selected} · ${number(m?.throughputMbps," Mbps")}`:m?.symptoms[0]||"Service outside thresholds"));tiles.append(tile);
       }
       group.append(head,node("small","twin-region-budget",`${demand} / ${region.capacity} Mbps offered`),bar,tiles);return group;
@@ -146,7 +151,7 @@
   function pipeline() {
     const services = [["broker", "Event broker", "broker_down"], ["storage", "Object store", "storage_down"], ["detector", "Detection consumer", "detector_down"]];
     $t("#twin-services").replaceChildren(...services.map(([key, title, fault]) => {
-      const card = node("div", "twin-service"); card.append(node("b", "", title), node("span", "tag", state.services[key] ? "MODELED / AVAILABLE" : "MODELED / STOPPED"),
+      const card = node("div", `twin-service ${state.services[key]?"healthy":"critical"}`); card.append(node("b", "", title), node("span", `tag ${state.services[key]?"healthy":"critical"}`, state.services[key] ? "AVAILABLE" : "STOPPED"),
         button(state.services[key] ? "Stop dependency" : "Restore dependency", () => run({type: "FAULT", fault, value: state.services[key]}), actor() !== "operator", `twin-service-${key}`)); return card;
     }));
     $t("#twin-pipeline").replaceChildren(table(["Topic / partition", "End offset", "Storage next offset", "Detection next offset"],
@@ -238,7 +243,7 @@
     $t("#twin-schedule").disabled = actor() !== "operator";
   }
   function trends() {
-    const summary = M.summarize(state, selected()); const frames = state.history.slice(-60); const ns = "http://www.w3.org/2000/svg";
+    const count=Number($t("#twin-range").value);const summary = M.summarize(state, selected(),count); const frames = state.history.slice(-count); const ns = "http://www.w3.org/2000/svg";
     const plot = (field, title, unit) => {
       const card = node("article", "twin-trend"); const points = frames.map((f) => f.sites[selected()][field]);
       const values = points.filter((value) => Number.isFinite(value)); const max = Math.max(field === "lossPct" ? 5 : 30, ...values);
@@ -256,10 +261,51 @@
       const trace = document.createElementNS(ns, "path"); trace.setAttribute("d", path); trace.setAttribute("class", "twin-chart-trace"); svg.append(trace);
       card.append(svg, node("small", "", frames.length ? `T+${frames[0].tick} — T+${frames.at(-1).tick} · ${max} ${unit.trim()} scale` : "Advance to calculate observations")); return card;
     };
-    const sla = node("article", "twin-trend twin-sla"); sla.append(node("span", "eyebrow", "SLA WINDOW / LAST 60 TICKS"), node("strong", "", number(summary.slaPct, "%")),
+    const sla = node("article", "twin-trend twin-sla"); sla.append(node("span", "eyebrow", `SLA WINDOW / LAST ${count} TICKS`), node("strong", "", number(summary.slaPct, "%")),
       node("p", "", `${summary.outageTicks} unavailable ticks · ${summary.healthyTicks} healthy observations`),
       node("small", "", "Healthy = transport thresholds + modeled radio timing, feeder and power. Calculated history."));
     $t("#twin-trends").replaceChildren(plot("latencyMs", "TARGET LATENCY", " ms"), plot("lossPct", "TARGET LOSS", "%"), sla);
+  }
+  function monitoring() {
+    const count=Number($t("#twin-range").value),frames=V.windowFrames(state,count),series=V.traffic(state,count),summary=V.snapshot(state);
+    const ns="http://www.w3.org/2000/svg",svgNode=(tag,attrs,text)=>{const e=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,v);if(text!==undefined)e.textContent=text;return e;};
+    const svg=svgNode("svg",{viewBox:"0 0 900 180",role:"img","aria-label":`Network offered and delivered throughput over ${series.length} calculated ticks`});
+    const high=Math.max(1000,Math.ceil(Math.max(...series.map(p=>p.offered),0)/1000)*1000),left=58,right=880,top=8,bottom=145;
+    for(let n=0;n<4;n++){const value=high*n/3,y=bottom-value/high*(bottom-top);svg.append(svgNode("path",{d:`M${left} ${y} H${right}`,class:"monitor-grid-line"}),svgNode("text",{x:left-12,y:y+4,"text-anchor":"end",class:"monitor-axis"},Math.round(value).toLocaleString("en-US")));}
+    const xAt=i=>series.length===1?right:left+i*(right-left)/(series.length-1),yAt=v=>bottom-v/high*(bottom-top);
+    for(const field of ["delivered","offered"]){let path="";series.forEach((p,i)=>{path+=`${i?"L":"M"}${xAt(i).toFixed(1)} ${yAt(p[field]).toFixed(1)} `;});
+      if(field==="delivered"&&series.length>1)svg.append(svgNode("path",{d:`${path} L${right} ${bottom} L${left} ${bottom} Z`,class:"monitor-traffic-area"}));
+      svg.append(svgNode("path",{d:path,class:`monitor-traffic-line ${field}`}));
+      if(series.length){const latest=series.at(-1);svg.append(svgNode("circle",{cx:xAt(series.length-1),cy:yAt(latest[field]),r:3,class:`monitor-traffic-point ${field}`}));}
+    }
+    for(const [x,anchor,text] of [[left,"start",series.length?`T+${series[0].tick}`:"No observations"],[(left+right)/2,"middle",`${series.length} calculated ticks`],[right,"end",`T+${state.tick}`]])svg.append(svgNode("text",{x,y:171,"text-anchor":anchor,class:"monitor-axis"},text));
+    const legend=node("div","monitor-chart-legend");for(const [name,value,className] of [["Delivered",summary.delivered,"delivered"],["Offered",summary.offered,"offered"]]){const entry=node("span",className);entry.append(node("i"),node("b","",name),node("code","",`${value===null?"—":value.toLocaleString("en-US")} Mbps`));legend.append(entry);}
+    $t("#dashboard-traffic").replaceChildren(svg,legend);$t("#dashboard-traffic-range").textContent=`LAST ${count} TICKS`;
+    // Aggregate long windows into at most 60 columns. A cell retains the worst status in its interval.
+    const history=V.healthHistory(state,count),stride=history.stride,columns=history.rows[0]?.cells.length||0,fleet=Object.values(state.sites);
+    const heat=svgNode("svg",{viewBox:`0 0 840 ${fleet.length*12+24}`,role:"img","aria-label":`Health history of ${fleet.length} sites; green healthy, amber warning, red critical, gray no data`});
+    for(const [row,site] of fleet.entries()){
+      const y=row*12+3;heat.append(svgNode("text",{x:4,y:y+8,class:`monitor-axis${selected()===site.id?" target":""}`},site.id));
+      if(!columns){heat.append(svgNode("rect",{x:86,y,width:738,height:9,class:"health-cell unknown",rx:1}));continue;}
+      for(let col=0;col<columns;col++){const cell=history.rows[row].cells[col];
+        const rect=svgNode("rect",{x:86+col*738/columns,y,width:Math.max(1,738/columns-1.4),height:9,rx:1,class:`health-cell ${cell.status}`});
+        rect.append(svgNode("title",{},`${site.id} / T+${cell.from}–${cell.to} / ${cell.status}`));heat.append(rect);
+      }
+    }
+    heat.append(svgNode("text",{x:86,y:fleet.length*12+20,class:"monitor-axis"},frames.length?`T+${frames[0].tick}`:"No observations"),svgNode("text",{x:824,y:fleet.length*12+20,class:"monitor-axis","text-anchor":"end"},`T+${state.tick}${stride>1?` · worst of ${stride} ticks / cell`:""}`));
+    $t("#dashboard-health").replaceChildren(heat);
+    const capacities=V.regions(state).map(r=>({name:r.id,ratio:r.ratio,status:r.status,offered:r.offered,capacity:r.capacity}));
+    capacities.push({name:"CORE",ratio:summary.coreRatio,status:V.capacityStatus(summary.coreRatio),offered:summary.offered,capacity:state.core.capacity});
+    $t("#dashboard-capacity").replaceChildren(...capacities.map(r=>{const row=node("div",`monitor-capacity-row ${r.status}`),meta=node("div");meta.append(node("b","",r.name),node("small","",`${r.offered} / ${r.capacity}`),node("code","",`${r.ratio??"—"}%`));const bar=node("div","monitor-bar"),fill=node("span");fill.style.width=`${Math.min(100,r.ratio||0)}%`;bar.append(fill);row.append(meta,bar);return row;}));
+    const freshness=$t("#dashboard-freshness");freshness.className=`tag ${summary.pipeline?"healthy":"stale"}`;freshness.textContent=summary.pipeline?"Current":"Delayed";
+    const dependencies=[["Event broker",state.services.broker],["Object storage",state.services.storage],["Detection consumer",state.services.detector]];
+    const stream=dependencies.map(([name,available])=>{const row=node("div","monitor-dependency-row");row.append(node("span","",name),node("span",`tag ${available?"healthy":"critical"}`,available?"Available":"Stopped"));return row;});
+    const counters=node("div","monitor-stream-counters");for(const [name,value] of [["Storage lag",summary.storageLag],["Detection lag",summary.detectionLag],["Outbox",summary.outbox]]){const c=node("div");c.append(node("strong",value?"stale":"healthy",value),node("small","",name));counters.append(c);}
+    const open=state.incidents.filter(i=>i.state==="open").length;stream.push(counters,node("p","monitor-stream-note",`${open} confirmed incident${open===1?"":"s"} · ${summary.pipeline?"all detection offsets caught up":"alarms may trail actual service conditions"}`),button("Inspect pipeline →",()=>switchTab("pipeline")));
+    $t("#dashboard-streaming").replaceChildren(...stream);
+    const brief=V.brief(state,selected()),meta=node("div","brief-meta");meta.append(node("span",`tag ${brief.severity}`,brief.selectedStatus),node("span","",`${selected()} · T+${state.tick}`));
+    const evidence=node("div","brief-evidence-counts");evidence.append(node("span","",`${brief.probeCount} recent probe${brief.probeCount===1?"":"s"}`),node("span","",`${brief.activeCases} related case${brief.activeCases===1?"":"s"}`));
+    $t("#dashboard-brief").replaceChildren(meta,node("h3","",brief.headline),node("p","",brief.nextStep),evidence,node("small","brief-source","Monitoring context · deterministic model rules"));
   }
   function renderForecast() {
     const area = $t("#twin-forecast"); if (!forecast) {area.replaceChildren(); return;}
@@ -362,7 +408,7 @@
   }
   function render() {
     const focus = document.activeElement?.id;
-    stats(); topology(); trends(); investigation(); equipment(); scenarioTimeline(); pipeline(); changes(); mobile(); evidence(); renderCheckpoints();
+    stats(); topology(); trends(); monitoring(); investigation(); equipment(); scenarioTimeline(); pipeline(); changes(); mobile(); evidence(); renderCheckpoints();
     if (focus && document.getElementById(focus) && document.activeElement === document.body) document.getElementById(focus).focus();
   }
   function bind() {
@@ -379,6 +425,8 @@
     });
     $t("#twin-action").addEventListener("change",()=>{forecast=null;changes();});
     for(const id of ["access","region","core"])$t(`#twin-plan-${id}`).addEventListener("input",()=>{forecast=null;renderForecast();});
+    $t("#twin-range").addEventListener("change",()=>{trends();monitoring();});
+    $t("#dashboard-brief-inspect").addEventListener("click",()=>json("Monitoring context / calculated evidence",V.brief(state,selected())));
     $t("#twin-fleet-filter").addEventListener("change",topology);
     $t("#twin-case-export").addEventListener("click",()=>downloadJSON("strata-engineering-dossier.json",{format:"strata-engineering-dossier",version:M.VERSION,tick:state.tick,siteDesigns:catalog.sites,cases:state.cases,probes:state.probes,changes:state.jobs,resources:{regions:state.regions,core:state.core},commands:state.commands,boundary:"Deterministic model evidence. Physical work orders and advanced capacity/timing intent are not vendor commands or measured field outcomes. Export run separately for full replay."}));
     for (const target of Object.values(state.sites)) {const option = node("option", "", `${target.id} · ${target.name}`); option.value = target.id; $t("#twin-site").append(option);}

@@ -100,7 +100,7 @@ const errors = {
   decision_not_found: "Decision not found.",
 };
 const views = {
-  twin: ["Digital Twin", "Digital twin lab.", "Experiment with transport, mobile access and operational recovery."],
+  twin: ["Network overview", "Network command center", "Transport, radio, power and telemetry. One operational picture."],
   overview: [
     "Overview",
     "Your network. One clear view.",
@@ -201,7 +201,7 @@ function icon(name) {
 }
 function enhanceIcons() {
   document
-    .querySelectorAll(".sidebar [data-view] .nav-icon")
+    .querySelectorAll(".app-navigation [data-view] .nav-icon")
     .forEach((node) =>
       node.replaceChildren(icon(node.closest("[data-view]").dataset.view)),
     );
@@ -349,9 +349,9 @@ function showView(view, updateHash = true) {
   $("#search").setAttribute("aria-label", "Search devices or incidents");
   const groups = {twin: [["twin", "Digital Twin"]],
     operations: [["overview", "Overview"], ["operations", "Service health"], ["incidents", "Incidents"], ["inventory", "Assets"]],
-    workspace: [["integrations", "Connections"], ["intelligence", "AI review"], ["settings", "Settings"]]};
+    ai: [["intelligence", "AI decision desk"]], workspace: [["integrations", "Connections"], ["settings", "Settings"]]};
   const group = Object.keys(groups).find((key) => groups[key].some(([id]) => id === view));
-  const tabs = $("#context-tabs"); tabs.hidden = group === "twin";
+  const tabs = $("#context-tabs"); tabs.hidden = group === "twin" || group === "ai";
   tabs.replaceChildren(...groups[group].map(([id, name]) => {
     const button = el("button", id === view ? "selected" : "", name);
     button.type = "button"; button.setAttribute("aria-current", id === view ? "page" : "false");
@@ -360,7 +360,7 @@ function showView(view, updateHash = true) {
   Object.keys(views).forEach((key) => {
     $(`#view-${key}`).hidden = key !== view;
   });
-  document.querySelectorAll(".sidebar [data-view]").forEach((node) => {
+  document.querySelectorAll(".app-navigation [data-view]").forEach((node) => {
     node.classList.toggle("active", node.dataset.navGroup === group);
     node.setAttribute(
       "aria-current",
@@ -1332,6 +1332,12 @@ $("#export-operations").addEventListener("click", () => {
   );
   toast("Operational snapshot exported.");
 });
+function renderDashboardAI() {
+  const ready=Boolean(data?.ai?.ready),status=$("#dashboard-ai-readiness"),boundary=$("#dashboard-ai-boundary");
+  status.textContent=ready?"Providers ready":data?"Setup required":"Hub offline";
+  status.className=`tag ${ready?"ready":data?"warning":"unknown"}`;
+  boundary.textContent=ready?"Provider analysis is available for measured Hub incidents in the decision desk. This panel's brief is calculated model context.":data?"Configure providers in your Hub to request AI analysis. The monitoring brief is calculated model context.":"Connect the Hub to run provider analysis. The monitoring brief uses calculated model evidence.";
+}
 function render() {
   renderConnectors();
   renderServices();
@@ -1342,7 +1348,8 @@ function render() {
   renderSetup();
   renderOperations();
   $("#notice").hidden = Boolean(data);
-  $("#session-button").textContent = token ? "Disconnect" : "Hub token";
+  $("#session-button").textContent = token ? "Disconnect" : "Connect Hub";
+  renderDashboardAI();
   if (data) {
     $("#stat-connectors").replaceChildren(
       document.createTextNode(number(data.summary.healthy_connectors)),

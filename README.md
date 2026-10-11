@@ -2,17 +2,19 @@
 
 A telecom engineering portfolio with an English-language operations workspace and a reference architecture for virtual sites. Strata connects field monitoring, inventory, streaming telemetry, ML detection, and AI decision review in one evidence-based workflow.
 
-The layered network logo represents infrastructure, telemetry, and decisions connected through a common operational view. The console uses a restrained carbon and steel palette, orbital halftone, rounded surfaces, responsive navigation, and accessible motion.
+The layered network logo represents infrastructure, telemetry, and decisions connected through a common operational view. The console uses a Grafana-inspired monitoring grid, top navigation without a sidebar, dark panels, semantic threshold colors and accessible motion.
 
 ## Digital Twin lab
 
-The default **Digital Twin** is an owned, deterministic telecom operations simulator that runs as static Vercel assets without Docker, a VPS, provider keys or Hub login. The three main menus are **Digital Twin**, **Live Operations**, and **Workspace**. Live views retain their Hub connection requirement; the software catalog is now internal lab documentation.
+The default **Dashboards / Digital Twin** is an owned, deterministic telecom operations simulator that runs as static Vercel assets without Docker, a VPS, provider keys or Hub login. Top navigation provides **Dashboards**, **Live operations**, **AI copilot**, and **Connections**. Live views retain their Hub connection requirement; the software catalog is internal lab documentation.
+
+The [monitoring dashboard](docs/MONITORING_DASHBOARD.md) combines six status panels, aggregate offered/delivered traffic, a 24-site health history, regional/core capacity budgets, consumer lag and dependency health. Time ranges use actual calculated ticks. An AI copilot panel exposes model evidence and links to the existing Groq/OpenAI incident decision workflow; real provider readiness comes from the Hub.
 
 The lab monitors **24 sites in six regions**, with six coupled engineering investigations: MTU failover traps, regional/core congestion, BGP import storms, PTP plus RF feeder degradation, finite battery depletion, and lost observability. Seven diagnostic probes bind evidence to observed site conditions. Capacity plans are editable; forecasts compare every site. Independent modeled review, scoped verification and rollback distinguish incomplete fixes from resolved cases. Compact command journals rebuild full evidence by replay; four checkpoints preserve experiment starting points.
 
 Read [the simulator guide](docs/STRATA_TWIN.md) for a demonstration, model rules and Git remote deployment. The [optional native lab](docs/EXECUTABLE_LAB.md) and [software reference](docs/LAB_REFERENCE.md) retain actual configuration files and execution code. Native containers have not been run on this laptop. Model results describe selected operational behavior, with no claim of complete vendor, protocol or physical RF equivalence.
 
-The **Site equipment** studio adds seven representative routing profiles, 12 equipment roles, native AMF/SMF/UPF YAML, a 183-file public config pack (168 routing fragments plus 15 native reference files), and separate radio/antenna/power planning arithmetic. See [configuration targets and equipment boundaries](docs/DEVICE_CONFIGURATION.md). The carbon/steel UI includes responsive grids, halftone surfaces, loading screen/skeletons and reduced-motion-aware transitions.
+The **Site equipment** studio adds seven representative routing profiles, 12 equipment roles, native AMF/SMF/UPF YAML, a 183-file public config pack (168 routing fragments plus 15 native reference files), and separate radio/antenna/power planning arithmetic. See [configuration targets and equipment boundaries](docs/DEVICE_CONFIGURATION.md). The dashboard includes responsive grids, loading screen/skeletons, animated dialogs and reduced-motion-aware transitions.
 
 After deployment, visitors can use Twin while the development laptop is off. State belongs to each browser; playback pauses when the page is hidden or the lab is left. It does not provide unattended cloud workers or operate equipment.
 

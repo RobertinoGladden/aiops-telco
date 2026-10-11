@@ -9,7 +9,7 @@ const output = path.join(directory, "public");
 // Remove known obsolete public reference assets from earlier local builds.
 for (const name of ["ecosystem.js", "ecosystem.json", "twin-coverage.json"])
   await rm(path.join(output, "assets", name), {force: true});
-const assets = ["app.js", "app.css", "logo.svg", "twin-model-v1.js", "twin-model-v2.js", "twin-engineering.js", "twin-model.js", "twin.js", "twin-blueprint.json", "twin-solved-example.json", "device-config.js", "native-lab-pack.json"];
+const assets = ["app.js", "app.css", "dashboard.css", "monitoring-view.js", "logo.svg", "twin-model-v1.js", "twin-model-v2.js", "twin-engineering.js", "twin-model.js", "twin.js", "twin-blueprint.json", "twin-solved-example.json", "device-config.js", "native-lab-pack.json"];
 
 let hasSource = false;
 try { await access(path.join(source, "index.html")); hasSource = true; } catch {}

@@ -1,6 +1,16 @@
 # Validation evidence — 11 October 2026
 
-## Current v3 fleet upgrade
+## Current monitoring dashboard redesign
+
+**8/8 new monitoring projection tests passed.** They check missing observations, aggregate throughput and shared capacity, radio failure with working transport, finite emergency-power warnings, lost telemetry before alarms arrive, actual 60/120/300-tick windows, worst-condition heatmap aggregation, and read-only briefs preserving replay and review evidence. The existing model and real backend were not changed or rerun for this UI redesign.
+
+Browser checks covered top navigation without a sidebar, AI decision-desk access with explicit Hub-offline state, time-range changes, radio-case injection, broker outage/outbox growth, evidence modal opening and keyboard Escape, device panels, and checkpoint restore. The original T+12 run was restored after UI fault testing. No browser warnings/errors or duplicate DOM IDs were observed.
+
+At 1440 px, traffic/copilot panel heights matched at 298.78 px; health/capacity/pipeline matched at 340.80 px. The two equipment panels matched at 1006.73 px. At 375 px, document client and scroll widths both measured 360 px; the 700 px health map scrolls within its panel. The open context modal was 326 px wide and fit the viewport. Temporary viewport settings were reset.
+
+Repository and standalone Vercel builds succeeded with the new dashboard CSS and monitoring module. JavaScript syntax checks passed. See [dashboard overview](assets/strata-monitoring-dashboard.jpg) and [radio plus broker fault monitoring](assets/strata-monitoring-fault.jpg). The brief is deterministic model context; real Groq/OpenAI calls were not executed. No Git push or online publication was performed. Workspace environment files and values were not opened.
+
+## Earlier v3 fleet upgrade
 
 **49 model/config Node tests and two native mobile YAML contract tests passed.** The Node suite covers the preserved 28 transport/mobile/event contracts, 15 engineering cases/journal/campaign contracts, and six device/config checks. The campaign test was corrected to reference the newly generated proposal ID after intentionally omitting a probe; the corrected failure-gate test passed. The unmodified backend/provider/proxy suite was not rerun in this upgrade.
 

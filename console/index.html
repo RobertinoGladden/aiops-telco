@@ -7,62 +7,34 @@
     <title>Strata — Network Intelligence</title>
     <link rel="icon" href="/assets/logo.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/assets/app.css" />
+    <link rel="stylesheet" href="/assets/dashboard.css" />
     <script src="/assets/app.js" defer></script>
     <script src="/assets/twin-model-v1.js" defer></script>
     <script src="/assets/twin-model-v2.js" defer></script>
     <script src="/assets/twin-engineering.js" defer></script>
     <script src="/assets/twin-model.js" defer></script>
     <script src="/assets/device-config.js" defer></script>
+    <script src="/assets/monitoring-view.js" defer></script>
     <script src="/assets/twin.js" defer></script>
   </head>
   <body>
-    <aside class="sidebar">
-      <a class="brand" href="#twin"
-        ><img src="/assets/logo.svg" alt="" width="34" height="34" /><span
-          >Strata<small>NETWORK INTELLIGENCE</small></span
-        ></a
-      >
-      <div class="workspace">
-        <span class="workspace-icon">S</span
-        ><span>Strata workspace<small>Engineering environment</small></span
-        ><span class="workspace-dot"></span>
-      </div>
-      <div class="nav-label">WORKSPACE</div>
-      <nav aria-label="Main navigation">
-        <button data-view="twin" data-nav-group="twin" class="nav-item active"><span class="nav-icon">◇</span>Digital Twin<span class="new-label">LAB</span></button>
-        <button data-view="overview" data-nav-group="operations" class="nav-item"><span class="nav-icon">◫</span>Live Operations<span id="nav-incidents" class="nav-count">0</span></button>
-        <button data-view="integrations" data-nav-group="workspace" class="nav-item"><span class="nav-icon">⇄</span>Workspace</button>
-      </nav>
-      <div class="sidebar-bottom">
-        <div class="engine-badge">
-          <span class="status-dot"></span>Evidence before action
-        </div>
-        <p>Every decision connects to evidence and an operator review.</p>
-        <div class="profile">
-          <span class="avatar">EN</span
-          ><span
-            >Engineering workspace<small
-              >Twin model · v3.0</small
-            ></span
-          >
-        </div>
-      </div>
-    </aside>
     <div class="shell">
-      <header class="topbar">
-        <div class="breadcrumb">
-          Workspace <span>/</span> <b id="breadcrumb">Overview</b>
-        </div>
-        <label class="search"
-          ><span>⌕</span
-          ><input
-            id="search"
-            type="search"
-            placeholder="Search devices, sources, incidents…"
-            aria-label="Search devices or incidents"
-          /><kbd>/</kbd></label
-        ><button id="session-button" class="button subtle">Hub token</button>
+      <header class="dashboard-header">
+        <a class="dashboard-brand" href="#twin"><img src="/assets/logo.svg" alt="" width="28" height="28"><span>Strata<span class="dashboard-brand-divider">/</span><small>NETWORK INTELLIGENCE</small></span></a>
+        <nav class="app-navigation" aria-label="Main navigation">
+          <button data-view="twin" data-nav-group="twin" class="active"><span class="nav-icon"></span>Dashboards</button>
+          <button data-view="overview" data-nav-group="operations"><span class="nav-icon"></span>Live operations<span id="nav-incidents" class="nav-count">0</span></button>
+          <button data-view="intelligence" data-nav-group="ai"><span class="nav-icon"></span>AI copilot</button>
+          <button data-view="integrations" data-nav-group="workspace"><span class="nav-icon"></span>Connections</button>
+        </nav>
+        <span class="dashboard-workspace">Engineering workspace</span>
+        <button id="session-button" class="button subtle">Connect Hub</button>
       </header>
+      <div class="topbar">
+        <div class="breadcrumb">Dashboards <span>/</span> <b id="breadcrumb">Network overview</b></div>
+        <label class="search"><span>⌕</span><input id="search" type="search" placeholder="Search devices, sources, incidents…" aria-label="Search devices or incidents"><kbd>/</kbd></label>
+        <span class="dashboard-version">STRATA / V3</span>
+      </div>
       <main>
         <div class="page-header">
           <div class="hero-copy">
@@ -108,14 +80,15 @@
           <div class="twin-toolbar">
             <label>Target site<select id="twin-site" aria-label="Simulator target site"></select></label>
             <label>Modeled actor<select id="twin-actor"><option value="operator">Operator</option><option value="reviewer">Reviewer</option></select></label>
+            <label>Time range<select id="twin-range"><option value="60">Last 60 ticks</option><option value="120">Last 120 ticks</option><option value="300">Last 300 ticks</option></select></label>
             <label>Playback<select id="twin-speed"><option value="1">1× speed</option><option value="4">4× speed</option></select></label>
             <div class="twin-clock-actions"><button id="twin-play" class="button primary" aria-pressed="false">▶ Play</button><button id="twin-step" class="button">Step +1s</button><button id="twin-advance" class="button primary">Advance +5s →</button></div>
-            <button id="twin-checkpoint" class="button">Save checkpoint</button><button id="twin-export" class="button">Export run ↗</button><button id="twin-import" class="button">Replay file</button><input id="twin-file" type="file" accept="application/json,.json" hidden><button id="twin-reset" class="button subtle">Reset</button>
+            <button id="twin-checkpoint" class="button">Checkpoint</button><details class="dashboard-run-tools"><summary>Run tools</summary><div><button id="twin-export" class="button">Export run ↗</button><button id="twin-import" class="button">Replay file</button><input id="twin-file" type="file" accept="application/json,.json" hidden><button id="twin-reset" class="button subtle">Reset</button></div></details>
           </div>
           <p id="twin-message" class="twin-message" role="status">Loading simulation model…</p>
           <div id="twin-stats" class="twin-summary" aria-label="Lab summary"><div class="twin-skeleton"></div><div class="twin-skeleton"></div><div class="twin-skeleton"></div><div class="twin-skeleton"></div></div>
           <div class="twin-tabs" role="group" aria-label="Simulation layers">
-            <button data-twin-tab="network" class="selected" aria-pressed="true">Fleet monitor</button>
+            <button data-twin-tab="network" class="selected" aria-pressed="true">Network overview</button>
             <button data-twin-tab="equipment" aria-pressed="false">Site equipment</button>
             <button data-twin-tab="scenarios" aria-pressed="false">Engineering cases</button>
             <button data-twin-tab="pipeline" aria-pressed="false">Operations</button>
@@ -145,15 +118,24 @@
               <label>After ticks<input id="twin-scheduled-after" type="number" min="1" max="120" value="3"></label><label>Value<input id="twin-scheduled-value" type="number" value="1"></label><button id="twin-schedule" class="button primary">Schedule fault →</button><p class="twin-note">For down/up switches use 1 = down, 0 = restored. Other faults use the displayed unit.</p>
             </div></div></div><div class="panel twin-schedule-panel"><div class="panel-heading"><div><h2>Experiment timeline</h2><p>Pending, applied and cancelled faults remain in the audit trail.</p></div></div><div id="twin-schedule-list" class="twin-table-wrap"></div></div>
           </div></details></section>
-          <section data-twin-panel="network"><div class="twin-grid">
-            <div class="panel"><div class="panel-heading"><div><h2>Regional transport fabric</h2><p>Dual paths, six aggregation domains and a shared core. Select a site below to investigate.</p></div><span class="tag">CALCULATED</span></div><div id="twin-topology" class="twin-topology"></div><div id="twin-trends" class="twin-trends"></div></div>
+          <section data-twin-panel="network">
+            <div class="monitor-grid">
+              <section class="panel monitor-traffic"><div class="panel-heading"><div><h2>Network traffic</h2><p>Offered vs delivered throughput · all sites · Mbps</p></div><span id="dashboard-traffic-range" class="tag">MODEL HISTORY</span></div><div id="dashboard-traffic" class="monitor-chart"></div></section>
+              <section class="panel monitor-copilot"><div class="panel-heading"><div><h2><span class="copilot-symbol" aria-hidden="true">✧</span> AI copilot</h2><p>Evidence → analysis → reviewed action</p></div><span id="dashboard-ai-readiness" class="tag unknown">Hub offline</span></div><div id="dashboard-brief" class="dashboard-brief"></div><div class="copilot-footer"><span class="copilot-provider-chain">GROQ <span>→</span> OPENAI DECISIONS</span><div class="copilot-actions"><button id="dashboard-brief-inspect" class="button">Inspect context</button><button class="button copilot-button" data-view="intelligence">Open AI decision desk ↗</button></div></div><p id="dashboard-ai-boundary" class="copilot-boundary">Connect the Hub to run provider analysis. The monitoring brief uses calculated model evidence.</p></section>
+              <section class="panel monitor-health"><div class="panel-heading"><div><h2>Site health history</h2><p>Transport + radio + power · worst condition per time bucket</p></div><div class="health-legend"><span class="status-key healthy">Healthy</span><span class="status-key warning">Warning</span><span class="status-key critical">Critical</span><span class="status-key unknown">No data</span></div></div><div id="dashboard-health" class="monitor-health-map"></div></section>
+              <section class="panel monitor-capacity"><div class="panel-heading"><div><h2>Regional capacity</h2><p>Offered load / provisioned budget</p></div><span class="panel-code">Mbps</span></div><div id="dashboard-capacity" class="monitor-capacity-list"></div></section>
+              <section class="panel monitor-streaming"><div class="panel-heading"><div><h2>Telemetry pipeline</h2><p>Dependency state & consumer offsets</p></div><span id="dashboard-freshness" class="tag unknown">Waiting</span></div><div id="dashboard-streaming" class="monitor-streaming-list"></div></section>
+            </div>
+          <section class="panel twin-fleet-panel"><div class="panel-heading"><div><span class="eyebrow">FLEET / SERVICE HEALTH</span><h2>Every site. Every dependency.</h2><p id="twin-fleet-caption">Regional health derived from calculated transport, radio and power conditions.</p></div><label class="twin-fleet-filter">Fleet filter<select id="twin-fleet-filter"><option value="all">All sites</option><option value="degraded">Degraded only</option><option value="selected-region">Selected region</option></select></label></div><div id="twin-network" class="twin-fleet-grid"></div><details class="twin-ledger"><summary>Open fleet telemetry ledger</summary><div id="twin-fleet-ledger" class="twin-table-wrap"></div></details></section>
+          <details class="panel dashboard-engineering-controls"><summary>Engineering controls <span>Topology · fault injection · selected-site trends</span></summary><div class="twin-grid">
+            <div class="panel"><div class="panel-heading"><div><h2>Transport topology & selected-site trends</h2><p>Dual paths, six aggregation domains and a shared core. Select a site below to investigate.</p></div><span class="tag">CALCULATED</span></div><div id="twin-topology" class="twin-topology"></div><div id="twin-trends" class="twin-trends"></div></div>
             <div class="panel twin-controls"><div class="panel-heading"><div><h2>Selected site / fault controls</h2><p>Faults change the environment. Reviewed jobs change configuration.</p></div></div>
               <div class="twin-controls-body"><label>Primary link delay <span id="twin-delay-label">0 ms</span><input id="twin-delay" type="range" min="0" max="250" step="1" value="0"></label><label>Primary packet loss <span id="twin-loss-label">0%</span><input id="twin-loss" type="range" min="0" max="40" step="1" value="0"></label><label>Offered traffic <span id="twin-demand-label">100 Mbps</span><input id="twin-demand" type="range" min="1" max="1000" step="1" value="100"></label>
               <div class="twin-button-stack"><button data-twin-command="primary_down" class="button">Toggle primary link</button><button data-twin-command="backup_down" class="button">Toggle backup link</button><button id="twin-delay-demo" class="button">Inject delay incident</button><button id="twin-clear-fault" class="button">Clear basic site faults</button><button data-twin-command="DRIFT" class="button">Inject configuration drift</button><button id="twin-native" class="button">Export FRR candidate ↗</button></div>
               <p class="twin-note">Advance the clock to calculate telemetry, detect incidents and verify changes. A down link takes three ticks to be detected by routing.</p></div>
             </div>
           </div>
-          <section class="panel twin-fleet-panel"><div class="panel-heading"><div><span class="eyebrow">FLEET / SERVICE HEALTH</span><h2>Every site. Every dependency.</h2><p id="twin-fleet-caption">Regional health derived from calculated transport, radio and power conditions.</p></div><label class="twin-fleet-filter">Fleet filter<select id="twin-fleet-filter"><option value="all">All sites</option><option value="degraded">Degraded only</option><option value="selected-region">Selected region</option></select></label></div><div id="twin-network" class="twin-fleet-grid"></div><details class="twin-ledger"><summary>Open fleet telemetry ledger</summary><div id="twin-fleet-ledger" class="twin-table-wrap"></div></details></section>
+</details>
           <div class="twin-investigation-grid"><section class="panel"><div class="panel-heading"><div><span class="eyebrow">CORRELATION / SELECTED SITE</span><h2 id="twin-diagnosis-title">Investigate the evidence</h2><p>Rule-based hypotheses from model observations. Validate with a diagnostic probe.</p></div></div><div id="twin-diagnosis" class="twin-diagnosis"></div></section><section class="panel"><div class="panel-heading"><div><span class="eyebrow">DIAGNOSTICS / REPLAYABLE EVIDENCE</span><h2>Inspect before changing.</h2><p>Probes are bound to site conditions and expire for approval after 30 ticks.</p></div></div><div id="twin-probes" class="twin-probes"></div><div id="twin-probe-results" class="twin-probe-results"></div></section></div>
           <details class="panel twin-access"><summary>Access & mobile sessions <span>DHCP · slicing · handover</span></summary><div><div class="panel-heading"><div><h2>Access services & mobile admission</h2><p>DHCP pool lifecycle, subscriber policy, registration and modeled PDU sessions.</p></div><span class="tag">NO RF / PROTOCOL EMULATION</span></div><div class="twin-inline-actions"><label>Client ID<input id="twin-client" value="client-1" maxlength="32"></label><button id="twin-lease" class="button">Request DHCP lease</button><label>Subscriber<input id="twin-subscriber" value="demo-1" maxlength="32"></label><label>Network slice<select id="twin-slice"><option value="broadband">Broadband</option><option value="critical">Critical services</option><option value="iot">IoT</option></select></label><button id="twin-register" class="button primary">Register UE →</button><button data-twin-command="core_down" class="button">Toggle mobile core</button><button data-twin-command="radio_down" class="button">Toggle target cell</button></div><p class="twin-note">Public fixtures demo-1…demo-6. Weighted slice allocation shares 40 Mbps per cell. Handover interrupts the modeled user plane for two ticks and preserves the session address when successful.</p><div class="twin-inline-actions"><label>Handover target<select id="twin-handover-target" aria-label="Handover target"></select></label></div><div id="twin-mobile" class="twin-table-wrap"></div><div id="twin-leases" class="twin-table-wrap"></div></div></details>
           </section>
