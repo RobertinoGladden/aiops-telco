@@ -1,6 +1,6 @@
 {
-  "version": 2,
-  "name": "Strata regional transport lab",
+  "version": 3,
+  "name": "Strata multi-region engineering fleet",
   "sites": [
     {
       "id": "JKT-001",
@@ -9,7 +9,9 @@
       "service": "10.81.1.0/24",
       "management_vlan": 101,
       "service_vlan": 201,
-      "asn": 65101
+      "asn": 65101,
+      "region": "JKT",
+      "region_name": "Jakarta"
     },
     {
       "id": "BDG-001",
@@ -18,7 +20,9 @@
       "service": "10.81.2.0/24",
       "management_vlan": 102,
       "service_vlan": 202,
-      "asn": 65102
+      "asn": 65102,
+      "region": "BDG",
+      "region_name": "Bandung"
     },
     {
       "id": "SBY-001",
@@ -27,7 +31,240 @@
       "service": "10.81.3.0/24",
       "management_vlan": 103,
       "service_vlan": 203,
-      "asn": 65103
+      "asn": 65103,
+      "region": "SBY",
+      "region_name": "Surabaya"
+    },
+    {
+      "id": "JKT-002",
+      "name": "Jakarta sector site 2",
+      "management": "10.80.4.0/24",
+      "service": "10.81.4.0/24",
+      "management_vlan": 104,
+      "service_vlan": 204,
+      "asn": 65104,
+      "region": "JKT",
+      "region_name": "Jakarta"
+    },
+    {
+      "id": "JKT-003",
+      "name": "Jakarta sector site 3",
+      "management": "10.80.5.0/24",
+      "service": "10.81.5.0/24",
+      "management_vlan": 105,
+      "service_vlan": 205,
+      "asn": 65105,
+      "region": "JKT",
+      "region_name": "Jakarta"
+    },
+    {
+      "id": "JKT-004",
+      "name": "Jakarta sector site 4",
+      "management": "10.80.6.0/24",
+      "service": "10.81.6.0/24",
+      "management_vlan": 106,
+      "service_vlan": 206,
+      "asn": 65106,
+      "region": "JKT",
+      "region_name": "Jakarta"
+    },
+    {
+      "id": "BDG-002",
+      "name": "Bandung sector site 2",
+      "management": "10.80.7.0/24",
+      "service": "10.81.7.0/24",
+      "management_vlan": 107,
+      "service_vlan": 207,
+      "asn": 65107,
+      "region": "BDG",
+      "region_name": "Bandung"
+    },
+    {
+      "id": "BDG-003",
+      "name": "Bandung sector site 3",
+      "management": "10.80.8.0/24",
+      "service": "10.81.8.0/24",
+      "management_vlan": 108,
+      "service_vlan": 208,
+      "asn": 65108,
+      "region": "BDG",
+      "region_name": "Bandung"
+    },
+    {
+      "id": "BDG-004",
+      "name": "Bandung sector site 4",
+      "management": "10.80.9.0/24",
+      "service": "10.81.9.0/24",
+      "management_vlan": 109,
+      "service_vlan": 209,
+      "asn": 65109,
+      "region": "BDG",
+      "region_name": "Bandung"
+    },
+    {
+      "id": "SBY-002",
+      "name": "Surabaya sector site 2",
+      "management": "10.80.10.0/24",
+      "service": "10.81.10.0/24",
+      "management_vlan": 110,
+      "service_vlan": 210,
+      "asn": 65110,
+      "region": "SBY",
+      "region_name": "Surabaya"
+    },
+    {
+      "id": "SBY-003",
+      "name": "Surabaya sector site 3",
+      "management": "10.80.11.0/24",
+      "service": "10.81.11.0/24",
+      "management_vlan": 111,
+      "service_vlan": 211,
+      "asn": 65111,
+      "region": "SBY",
+      "region_name": "Surabaya"
+    },
+    {
+      "id": "SBY-004",
+      "name": "Surabaya sector site 4",
+      "management": "10.80.12.0/24",
+      "service": "10.81.12.0/24",
+      "management_vlan": 112,
+      "service_vlan": 212,
+      "asn": 65112,
+      "region": "SBY",
+      "region_name": "Surabaya"
+    },
+    {
+      "id": "MDN-001",
+      "name": "Medan aggregation",
+      "management": "10.80.13.0/24",
+      "service": "10.81.13.0/24",
+      "management_vlan": 113,
+      "service_vlan": 213,
+      "asn": 65113,
+      "region": "MDN",
+      "region_name": "Medan"
+    },
+    {
+      "id": "MDN-002",
+      "name": "Medan sector site 2",
+      "management": "10.80.14.0/24",
+      "service": "10.81.14.0/24",
+      "management_vlan": 114,
+      "service_vlan": 214,
+      "asn": 65114,
+      "region": "MDN",
+      "region_name": "Medan"
+    },
+    {
+      "id": "MDN-003",
+      "name": "Medan sector site 3",
+      "management": "10.80.15.0/24",
+      "service": "10.81.15.0/24",
+      "management_vlan": 115,
+      "service_vlan": 215,
+      "asn": 65115,
+      "region": "MDN",
+      "region_name": "Medan"
+    },
+    {
+      "id": "MDN-004",
+      "name": "Medan sector site 4",
+      "management": "10.80.16.0/24",
+      "service": "10.81.16.0/24",
+      "management_vlan": 116,
+      "service_vlan": 216,
+      "asn": 65116,
+      "region": "MDN",
+      "region_name": "Medan"
+    },
+    {
+      "id": "DPS-001",
+      "name": "Denpasar aggregation",
+      "management": "10.80.17.0/24",
+      "service": "10.81.17.0/24",
+      "management_vlan": 117,
+      "service_vlan": 217,
+      "asn": 65117,
+      "region": "DPS",
+      "region_name": "Denpasar"
+    },
+    {
+      "id": "DPS-002",
+      "name": "Denpasar sector site 2",
+      "management": "10.80.18.0/24",
+      "service": "10.81.18.0/24",
+      "management_vlan": 118,
+      "service_vlan": 218,
+      "asn": 65118,
+      "region": "DPS",
+      "region_name": "Denpasar"
+    },
+    {
+      "id": "DPS-003",
+      "name": "Denpasar sector site 3",
+      "management": "10.80.19.0/24",
+      "service": "10.81.19.0/24",
+      "management_vlan": 119,
+      "service_vlan": 219,
+      "asn": 65119,
+      "region": "DPS",
+      "region_name": "Denpasar"
+    },
+    {
+      "id": "DPS-004",
+      "name": "Denpasar sector site 4",
+      "management": "10.80.20.0/24",
+      "service": "10.81.20.0/24",
+      "management_vlan": 120,
+      "service_vlan": 220,
+      "asn": 65120,
+      "region": "DPS",
+      "region_name": "Denpasar"
+    },
+    {
+      "id": "MKS-001",
+      "name": "Makassar aggregation",
+      "management": "10.80.21.0/24",
+      "service": "10.81.21.0/24",
+      "management_vlan": 121,
+      "service_vlan": 221,
+      "asn": 65121,
+      "region": "MKS",
+      "region_name": "Makassar"
+    },
+    {
+      "id": "MKS-002",
+      "name": "Makassar sector site 2",
+      "management": "10.80.22.0/24",
+      "service": "10.81.22.0/24",
+      "management_vlan": 122,
+      "service_vlan": 222,
+      "asn": 65122,
+      "region": "MKS",
+      "region_name": "Makassar"
+    },
+    {
+      "id": "MKS-003",
+      "name": "Makassar sector site 3",
+      "management": "10.80.23.0/24",
+      "service": "10.81.23.0/24",
+      "management_vlan": 123,
+      "service_vlan": 223,
+      "asn": 65123,
+      "region": "MKS",
+      "region_name": "Makassar"
+    },
+    {
+      "id": "MKS-004",
+      "name": "Makassar sector site 4",
+      "management": "10.80.24.0/24",
+      "service": "10.81.24.0/24",
+      "management_vlan": 124,
+      "service_vlan": 224,
+      "asn": 65124,
+      "region": "MKS",
+      "region_name": "Makassar"
     }
   ]
 }

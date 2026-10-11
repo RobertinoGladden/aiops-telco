@@ -9,7 +9,7 @@ const output = path.join(directory, "public");
 // Remove known obsolete public reference assets from earlier local builds.
 for (const name of ["ecosystem.js", "ecosystem.json", "twin-coverage.json"])
   await rm(path.join(output, "assets", name), {force: true});
-const assets = ["app.js", "app.css", "logo.svg", "twin-model-v1.js", "twin-model.js", "twin.js", "twin-blueprint.json", "device-config.js", "native-lab-pack.json"];
+const assets = ["app.js", "app.css", "logo.svg", "twin-model-v1.js", "twin-model-v2.js", "twin-engineering.js", "twin-model.js", "twin.js", "twin-blueprint.json", "twin-solved-example.json", "device-config.js", "native-lab-pack.json"];
 
 let hasSource = false;
 try { await access(path.join(source, "index.html")); hasSource = true; } catch {}
@@ -21,6 +21,9 @@ if (hasSource) {
     const result = spawnSync(process.execPath,[generator],{stdio:"inherit"});
     if (result.status !== 0) throw new Error("Public native config generation failed");
   } catch (error) { if (error.code !== "ENOENT") throw error; }
+  const demoGenerator=path.resolve(directory,"../../scripts/build_engineering_demo.cjs");
+  const demo=spawnSync(process.execPath,[demoGenerator],{stdio:"inherit"});
+  if(demo.status!==0)throw new Error("Solved campaign generation failed");
   await mkdir(path.join(output, "assets"), { recursive: true });
   for (const file of assets)
     await copyFile(path.join(source, "assets", file), path.join(output, "assets", file));

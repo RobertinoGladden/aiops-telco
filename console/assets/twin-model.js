@@ -1,11 +1,11 @@
 /* Strata Twin: deterministic operational model, not a protocol or vendor emulator. */
 (function (root, factory) {
-  const api = factory(typeof module === "object" && module.exports ? require("./twin-model-v1.js") : root.StrataTwinLegacy);
+  const api = factory(typeof module === "object" && module.exports ? require("./twin-model-v1.js") : root.StrataTwinLegacy, typeof module === "object" && module.exports ? require("./twin-model-v2.js") : root.StrataTwinV2, typeof module === "object" && module.exports ? require("./twin-engineering.js") : root.StrataEngineering);
   if (typeof module === "object" && module.exports) module.exports = api;
   else root.StrataTwin = api;
-})(typeof globalThis !== "undefined" ? globalThis : this, function (Legacy) {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (Legacy, V2, E) {
   "use strict";
-  const VERSION = "2.0.0";
+  const VERSION = "3.0.0";
   const MAX_COMMANDS = 1200;
   const clone = (value) => JSON.parse(JSON.stringify(value));
   const sorted = (value) => Array.isArray(value) ? value.map(sorted) : value && typeof value === "object"
@@ -15,13 +15,14 @@
   const assumptions = [
     "One tick is one simulated second; the clock advances on command or during visible-browser playback.",
     "Routing models local preference, a 3-tick failure detection delay and 2-tick configuration convergence. No BGP packets are exchanged.",
-    "Fluid traffic model: demand is capped by link capacity, loss and a shared 500 Mbps core. This is not a TCP/packet simulator.",
+    "Fluid traffic model: demand is capped by link capacity, loss and regional aggregation and a shared declared core. This is not a TCP/packet simulator.",
     "Mobile registration, weighted slice allocation and a two-tick handover interruption are state machines. No NAS, SCTP, GTP, SIM cryptography or RF propagation runs here.",
     "Three event partitions, independent consumer offsets, acknowledge-before-commit, outbox retry and event-ID deduplication are modeled in browser memory.",
     "Object versions, monitoring confirmations and workflow review are modeled. No vendor REST API, database, consensus or production authentication is emulated.",
     "Scenario state is local to this browser. Exported command logs can be replayed; no background execution or shared cloud database is configured.",
   ];
   const actions = {
+    ...E.actions,
     prefer_backup: {label: "Prefer backup path", field: "backupPreference", value: 200},
     restore_primary: {label: "Restore primary preference", field: "backupPreference", value: 80},
     expand_backup: {label: "Increase backup capacity to 350 Mbps", field: "backupCapacity", value: 350},
@@ -40,7 +41,7 @@
   const faultTypes = ["primary_down", "backup_down", "primary_delay", "primary_loss", "demand", "broker_down", "storage_down", "detector_down", "core_down", "radio_down"];
   function assert(value, message) { if (!value) throw new Error(message); }
   function initial(catalog) {
-    assert(catalog && Array.isArray(catalog.sites) && catalog.sites.length === 3, "Exactly three site designs are required");
+    assert(catalog && Array.isArray(catalog.sites) && catalog.sites.length >= 3 && catalog.sites.length <= 48, "Declare 3–48 site designs");
     const state = {version: VERSION, tick: 0, serial: 0, commands: [], audit: [], jobs: [], incidents: [],
       inventoryRevision: 1, sites: {}, services: {broker: true, storage: true, detector: true, mobileCore: true},
       history: [], schedule: [], experiments: [], topics: {}, outbox: [], objects: {}, detections: {}, receipts: [], sessions: [], leases: [], failures: [],
@@ -65,9 +66,11 @@
         service: input.service, serviceVlan: input.service_vlan, managementVlan: input.management_vlan, asn: input.asn,
         intent: {backupPreference: 80, backupCapacity: 180}, config: {backupPreference: 80, backupCapacity: 180},
         revision: 1, convergence: 0, selected: "primary", demand: 100, radioUp: true, consecutive: 0, recovery: 0,
-        links: {primary: {up: true, knownUp: true, changedAt: 0, latency: 8 + index * 3, delay: 0, loss: 0, capacity: 250},
-                backup: {up: true, knownUp: true, changedAt: 0, latency: 20 + index * 3, delay: 0, loss: 0, capacity: 180}}, metrics: null};
+        links: {primary: {up: true, knownUp: true, changedAt: 0, latency: 8 + (index % 3) * 3, delay: 0, loss: 0, capacity: 250},
+                backup: {up: true, knownUp: true, changedAt: 0, latency: 20 + (index % 3) * 3, delay: 0, loss: 0, capacity: 180}}, metrics: null};
     }
+    E.initialize(state, catalog.sites);
+    state.assumptions.push("Engineering cases model MTU blackholes, route-import CPU pressure, PTP holdover, feeder mismatch and finite battery energy. Thresholds and capacity plans are declared lab assumptions, not vendor or 3GPP certification.", "RF feeder repair and battery commissioning are simulated field work orders. No physical equipment is controlled. Advanced capacity and timing patches are model intent, not exported vendor CLI.");
     for (const [name, count] of [["telemetry", 3], ["changes", 3], ["dead-letter", 1]])
       state.topics[name] = Array.from({length: count}, () => []);
     observe(state, "system", "bootstrap", "Declared site intent loaded; external services were not started");
@@ -91,10 +94,10 @@
   }
   function site(state, siteId) { assert(Object.hasOwn(state.sites, siteId), "Unknown site"); return state.sites[siteId]; }
   function snap(value) { return {revision: value.revision, config: clone(value.config), intent: clone(value.intent),
-    context: {demand: value.demand, radioUp: value.radioUp, links: Object.fromEntries(Object.entries(value.links)
+    context: {demand: value.demand, radioUp: value.radioUp, engineering: E.context(value), links: Object.fromEntries(Object.entries(value.links)
       .map(([name, link]) => [name, {up: link.up, delay: link.delay, loss: link.loss}]))}}; }
   function job(state, jobId) { const value = state.jobs.find((j) => j.id === jobId); assert(value, "Unknown change"); return value; }
-  function healthy(metric) { return metric && metric.available && metric.lossPct <= 5 && Number.isFinite(metric.latencyMs)
+  function healthy(metric) { return metric && metric.available && metric.radioHealthy !== false && metric.lossPct <= 5 && Number.isFinite(metric.latencyMs)
     && metric.latencyMs <= 50 && metric.throughputMbps >= Math.min(100, metric.demandMbps * .95); }
   function emit(state, topic, partition, payload) {
     if (!state.services.broker) return null;
@@ -131,7 +134,7 @@
       value.consecutive += 1; value.recovery = 0;
       if (value.consecutive >= 3 && !open) {
         state.incidents.push({id: id(state, "incident"), site: value.id, state: "open", openedAt: metric.tick, resolvedAt: null,
-          evidence: [metric.eventId], reason: !metric.available ? "Path unavailable" : metric.lossPct > 5 ? "Packet loss above threshold" : metric.latencyMs > 50 ? "Latency above threshold" : "Capacity shortfall"});
+          evidence: [metric.eventId], reason: !metric.available ? "Path unavailable" : metric.radioHealthy === false ? "Radio timing, feeder or power degradation" : metric.lossPct > 5 ? "Packet loss above threshold" : metric.latencyMs > 50 ? "Latency above threshold" : "Capacity shortfall"});
         observe(state, "detector", "incident_open", `${value.id}: three consecutive modeled threshold breaches`);
       } else if (open) open.evidence.push(metric.eventId);
     } else {
@@ -163,7 +166,9 @@
       }
     }
   }
+  function engineeringContext() { return {assert, clone, site, snap, id, observe, healthy, finishJob, lag, canonical}; }
   function traffic(state) {
+    E.prepare(state);
     const candidates = Object.values(state.sites).map((value) => {
       for (const link of Object.values(value.links)) if (state.tick - link.changedAt >= 3) link.knownUp = link.up;
       if (value.convergence > 0) value.convergence -= 1;
@@ -173,26 +178,32 @@
         value.selected = choices[0]?.[0] || null;
       }
       const link = value.selected ? value.links[value.selected] : null;
-      const available = Boolean(link?.up); const capacity = value.selected === "backup" ? value.config.backupCapacity : 250;
+      const condition = E.conditions(state,value);
+      const available = Boolean(link?.up && condition.routerUp && !condition.mtuBlackhole); const capacity = value.selected === "backup" ? value.config.backupCapacity : value.config.primaryCapacity;
       return {value, link, available, capacity, delivered: available ? Math.min(value.demand, capacity) * (1 - link.loss / 100) : 0};
     });
-    const aggregate = candidates.reduce((total, c) => total + c.delivered, 0); const scale = aggregate > 500 ? 500 / aggregate : 1;
+    const regional = {};
+    for (const c of candidates) regional[c.value.region] = (regional[c.value.region] || 0) + c.delivered;
+    for (const c of candidates) {c.regionalScale = Math.min(1,state.regions[c.value.region].capacity / Math.max(1,regional[c.value.region]));c.delivered *= c.regionalScale;}
+    const aggregate = candidates.reduce((total, c) => total + c.delivered, 0); const scale = Math.min(1,state.core.capacity / Math.max(1,aggregate));
     for (const c of candidates) {
       const throughput = c.delivered * scale;
-      const loss = c.available ? 100 * (1 - (1 - c.link.loss / 100) * Math.min(1, c.capacity / Math.max(c.value.demand, 1)) * scale) : 100;
+      const loss = c.available ? 100 * (1 - (1 - c.link.loss / 100) * Math.min(1, c.capacity / Math.max(c.value.demand, 1)) * scale * c.regionalScale) : 100;
       const metric = {schema: 1, source: "strata-twin-model", eventId: id(state, "metric"), tick: state.tick, site: c.value.id,
-        selectedPath: c.value.selected, available: c.available, latencyMs: c.available ? round(c.link.latency + c.link.delay + Math.max(0, c.value.demand / c.capacity - 1) * 20) : null,
-        lossPct: round(loss), throughputMbps: round(throughput), demandMbps: c.value.demand, coreCapacityMbps: 500};
+        selectedPath: c.value.selected, available: c.available, latencyMs: c.available ? round(c.link.latency + c.link.delay + Math.max(0, c.value.demand / c.capacity - 1) * 20 + (c.value.region === "LEGACY" ? 0 : Math.max(0,regional[c.value.region]/state.regions[c.value.region].capacity-1)*20)) : null,
+        lossPct: round(loss), throughputMbps: round(throughput), demandMbps: c.value.demand, coreCapacityMbps: state.core.capacity, regionalCapacityMbps: state.regions[c.value.region].capacity};
+      E.enrich(state,c.value,metric);
       c.value.metrics = metric;
-      publish(state, "telemetry", c.value.index, metric);
+      c.value.observedContext = snap(c.value);
+      publish(state, "telemetry", c.value.index % 3, metric);
     }
   }
   function finishJob(state, value) {
     value.finishedAt = state.tick; const target = site(state, value.site);
     value.after = snap(target); value.artifact = `changes/${value.id}.json`;
     const payload = {eventId: id(state, "change-event"), source: "strata-twin-model", jobId: value.id, site: value.site, state: value.state,
-      before: value.before, after: value.after, observations: clone(value.observations), rollback: value.rollback || null};
-    const receipt = publish(state, "changes", target.index, payload);
+      before: value.before, after: value.after, observations: clone(value.observations), rollback: value.rollback || null, affected: value.affected || [value.site], probeIds: value.probeIds || [], scopeObservations: value.scopeObservations || [], resources: value.resources || null, kind: value.kind || "Modeled routing policy"};
+    const receipt = publish(state, "changes", target.index % 3, payload);
     value.delivery = receipt ? "event_acknowledged" : "outbox_pending";
     value.evidenceState = state.services.storage ? "stored_in_model" : "storage_pending";
     if (state.services.storage) object(state, value.artifact, payload);
@@ -200,7 +211,7 @@
     observe(state, "executor", value.state, `${value.id}: ${value.action}`, {jobId: value.id});
   }
   function verification(state) {
-    for (const value of state.jobs.filter((j) => j.state === "executing")) {
+    for (const value of state.jobs.filter((j) => j.state === "executing" && !j.engineering)) {
       const target = site(state, value.site);
       if (state.tick < value.startedAt + 2) continue;
       value.observations.push(clone(target.metrics));
@@ -211,7 +222,7 @@
         observe(state, "executor", "rollback_started", `${value.id}: modeled verification failed; restoring candidate baseline`); }
       if (value.state === "verified") finishJob(state, value);
     }
-    for (const value of state.jobs.filter((j) => j.state === "rolling_back")) {
+    for (const value of state.jobs.filter((j) => j.state === "rolling_back" && !j.engineering)) {
       if (state.tick < value.rollback.configRestoredAt + 2) continue;
       value.rollback.observations.push(clone(site(state, value.site).metrics));
       if (value.rollback.observations.length >= 2) {
@@ -268,17 +279,17 @@
       if (session.state === "handover_pending") {
         if (state.tick < session.handover.startedAt + 2) {session.throughputMbps = 0; continue;}
         const destination = site(state, session.handover.target);
-        if (destination.radioUp) {
+        if (destination.radioUp && destination.metrics?.radioHealthy !== false) {
           session.site = destination.id; session.state = "pdu_active"; session.handover.state = "completed"; session.handover.finishedAt = state.tick;
           observe(state, "mobile-core", "handover_completed", `${session.id}: ${session.handover.source} → ${session.site}; IP retained`);
-        } else if (site(state, session.handover.source).radioUp) {
+        } else if (site(state, session.handover.source).radioUp && site(state, session.handover.source).metrics?.radioHealthy !== false) {
           session.state = "pdu_active"; session.handover.state = "fallback"; session.handover.finishedAt = state.tick;
           observe(state, "mobile-core", "handover_fallback", `${session.id}: destination cell unavailable; returned to source`);
         } else {session.handover.state = "failed"; session.handover.finishedAt = state.tick; reject(session, "Both cells unavailable");}
         continue;
       }
       const target = site(state, session.site);
-      if (!target.radioUp) reject(session, "Cell unavailable");
+      if (!target.radioUp || target.metrics?.radioHealthy === false) reject(session, "Cell unavailable");
       else if (session.state === "registration_pending" && state.tick >= session.startedAt + 1) {
         session.state = "registered"; observe(state, "mobile-core", "registered", session.id);
       } else if (session.state === "registered" && state.tick >= session.startedAt + 2) {
@@ -289,7 +300,7 @@
     }
     for (const target of Object.values(state.sites)) {
       const peers = state.sessions.filter((s) => s.state === "pdu_active" && s.site === target.id);
-      const allocations = allocateWeighted(peers, Math.min(40, target.metrics?.throughputMbps || 0));
+      const allocations = allocateWeighted(peers, Math.min(target.metrics?.radioBudgetMbps ?? 40, target.metrics?.throughputMbps || 0));
       for (const session of peers) session.throughputMbps = allocations.get(session.id);
     }
     for (const lease of state.leases.filter((lease) => lease.expiresAt <= state.tick))
@@ -310,22 +321,24 @@
     if (state.services.storage) for (const value of state.jobs.filter((j) => j.pendingArtifact)) {
       object(state, value.artifact, value.pendingArtifact); delete value.pendingArtifact; value.evidenceState = "stored_in_model";
     }
-    traffic(state); consume(state); sessions(state); verification(state);
+    traffic(state); consume(state); sessions(state); verification(state); E.verify(state,engineeringContext());
     state.history.push({tick: state.tick, sites: Object.fromEntries(Object.values(state.sites).map((target) => [target.id, clone(target.metrics)]))});
   }
   function validateCommand(command) {
     assert(command && typeof command === "object" && !Array.isArray(command), "Invalid command");
-    const keys = ["type", "site", "actor", "ticks", "fault", "value", "action", "reason", "jobId", "client", "subscriber", "sessionId", "slice", "after", "scheduleId", "scenarioId"];
+    const keys = ["type", "site", "actor", "ticks", "fault", "value", "action", "reason", "jobId", "client", "subscriber", "sessionId", "slice", "after", "scheduleId", "scenarioId", "caseId", "probe", "plan"];
     assert(Object.keys(command).every((key) => keys.includes(key)), "Unknown command field");
     assert(typeof command.type === "string", "Command type is required");
-    for (const key of ["site", "actor", "fault", "action", "reason", "jobId", "client", "subscriber", "sessionId", "slice", "scheduleId", "scenarioId"])
+    if (command.plan !== undefined) assert(command.type === "PROPOSE" && command.action === "capacity_plan", "Capacity plan is only valid for its proposal");
+    for (const key of ["site", "actor", "fault", "action", "reason", "jobId", "client", "subscriber", "sessionId", "slice", "scheduleId", "scenarioId", "caseId", "probe"])
       if (command[key] !== undefined) assert(typeof command[key] === "string" && command[key].length <= 200, "Invalid command string");
   }
   function dispatch(state, command) {
     validateCommand(command); assert(state.commands.length < MAX_COMMANDS, "Session limit reached. Export this run and reset before continuing");
     const c = clone(command); const actor = c.actor || "operator";
     assert(["operator", "reviewer", "system"].includes(actor), "Unknown modeled actor");
-    if (c.type === "ADVANCE") {
+    if (E.handles(state,c)) { E.handle(state,c,actor,engineeringContext());
+    } else if (c.type === "ADVANCE") {
       assert(Number.isInteger(c.ticks) && c.ticks >= 1 && c.ticks <= 30, "Advance 1–30 ticks at a time");
       assert(state.tick + c.ticks <= 1500, "Session limit is 1500 ticks. Export and reset to continue");
       for (let i = 0; i < c.ticks; i++) tick(state);
@@ -356,7 +369,7 @@
     } else if (c.type === "PROPOSE") {
       assert(actor === "operator", "Only the modeled operator can propose a change"); const target = site(state, c.site);
       assert(Object.hasOwn(actions, c.action), "Unsupported change"); assert(typeof c.reason === "string" && c.reason.trim().length >= 5, "A reason is required");
-      assert(!state.jobs.some((j) => j.site === c.site && ["executing", "rolling_back"].includes(j.state)), "This site already has an active change");
+      assert(!state.jobs.some((j) => (j.site === c.site || (j.affected || []).includes(c.site)) && ["executing", "rolling_back"].includes(j.state)), "This site already has an active change");
       const before = snap(target); const candidate = {...target.config, [actions[c.action].field]: actions[c.action].value};
       assert(canonical(candidate) !== canonical(target.config), "Candidate is identical to running configuration");
       const value = {id: id(state, "job"), site: c.site, action: c.action, reason: c.reason.trim(), author: actor,
@@ -369,13 +382,13 @@
     } else if (c.type === "EXECUTE") {
       assert(actor === "operator", "Only the modeled operator can execute an approved change"); const value = job(state, c.jobId); const target = site(state, value.site);
       assert(value.state === "approved" && value.approval && state.tick < value.expiresAt, "Current independent approval required");
-      assert(!state.jobs.some((j) => j.id !== value.id && j.site === value.site && ["executing", "rolling_back"].includes(j.state)), "This site already has an active change");
+      assert(!state.jobs.some((j) => j.id !== value.id && (j.site === value.site || (j.affected || []).includes(value.site)) && ["executing", "rolling_back"].includes(j.state)), "This site already has an active change");
       assert(canonical(snap(target)) === canonical(value.before), "Configuration or intent changed; propose and review again");
       target.config = clone(value.candidate); target.revision += 1; target.convergence = 2;
       value.startedAt = state.tick; value.state = "executing"; observe(state, actor, "change_executing", value.id);
     } else if (c.type === "DRIFT") {
       assert(actor === "operator", "Only the modeled operator can inject drift"); const target = site(state, c.site);
-      assert(!state.jobs.some((j) => j.site === c.site && ["executing", "rolling_back"].includes(j.state)), "Wait for the active change before injecting drift");
+      assert(!state.jobs.some((j) => (j.site === c.site || (j.affected || []).includes(c.site)) && ["executing", "rolling_back"].includes(j.state)), "Wait for the active change before injecting drift");
       target.config.backupPreference = target.config.backupPreference === 80 ? 200 : 80; target.revision += 1; target.convergence = 2;
       observe(state, actor, "configuration_drift", `${c.site}: running preference changed outside reviewed workflow`);
     } else if (c.type === "ACCEPT_INTENT") {
@@ -421,12 +434,12 @@
       observe(state, actor, "session_released", value.id);
     } else if (c.type === "INVALID_EVENT") {
       assert(actor === "operator", "Modeled operator required"); const target = site(state, c.site);
-      publish(state, "telemetry", target.index, {eventId: id(state, "invalid"), schema: 99, source: "strata-twin-model", site: target.id});
+      publish(state, "telemetry", target.index % 3, {eventId: id(state, "invalid"), schema: 99, source: "strata-twin-model", site: target.id});
       observe(state, actor, "invalid_event_injected", `${c.site}: schema version 99`);
     } else if (c.type === "REDRIVE") {
       assert(actor === "operator", "Modeled operator required"); const target = site(state, c.site);
       assert(target.metrics, "Advance the clock to collect a modeled observation first");
-      publish(state, "telemetry", target.index, target.metrics); observe(state, actor, "event_redelivered", target.metrics.eventId);
+      publish(state, "telemetry", target.index % 3, target.metrics); observe(state, actor, "event_redelivered", target.metrics.eventId);
     } else throw new Error("Unsupported command type");
     state.commands.push(c);
     return state;
@@ -437,6 +450,7 @@
       commands: clone(state.commands), assumptions: clone(assumptions), finalState: clone(state)};
   }
   function replay(run) {
+    if (run?.format === "strata-twin-journal") return replayJournal(run);
     assert(run && run.format === "strata-twin-run" && run.version === VERSION && run.source === "strata-twin-model", "Unsupported run format or model version");
     assert(Array.isArray(run.commands) && run.commands.length <= MAX_COMMANDS, "Run exceeds replay limit");
     assert(run.finalState && typeof run.finalState === "object" && !Array.isArray(run.finalState), "Run must include its claimed final state");
@@ -448,10 +462,27 @@
   }
   function migrate(run) {
     if (run?.version === VERSION) return replay(run);
-    assert(Legacy && run?.version === "1.0.0", "Unsupported run format or model version");
-    Legacy.replay(run); // Verify the original claimed result before interpreting commands under v2 rules.
+    assert((Legacy && run?.version === "1.0.0") || (V2 && run?.version === "2.0.0"), "Unsupported run format or model version");
+    (run.version === "1.0.0" ? Legacy : V2).replay(run); // Verify the original claimed result before interpreting commands under v2 rules.
     const state = initial({sites: run.siteDesigns});
     for (const command of run.commands) dispatch(state, command); return state;
+  }
+  function journalSummary(state) {
+    return {tick:state.tick,serial:state.serial,inventoryRevision:state.inventoryRevision,
+      sites:Object.fromEntries(Object.values(state.sites).map(s=>[s.id,{...snap(s),metrics:clone(s.metrics),equipment:clone(s.equipment)}])),
+      services:clone(state.services),regions:clone(state.regions),core:clone(state.core),jobs:clone(state.jobs),cases:clone(state.cases),probes:clone(state.probes),
+      counters:clone(state.counters),groups:clone(state.groups),outboxCount:state.outbox.length,incidents:clone(state.incidents),sessions:clone(state.sessions),leases:clone(state.leases),schedule:clone(state.schedule)};
+  }
+  function exportJournal(state,catalog) {
+    return {format:"strata-twin-journal",version:VERSION,source:"strata-twin-model",siteDesigns:clone(catalog.sites),commands:clone(state.commands),
+      finalSummary:journalSummary(state),boundary:"Replay reconstructs full telemetry, history and object evidence from commands, then verifies this structural final summary. This is not a signed attestation or authentication mechanism."};
+  }
+  function replayJournal(run) {
+    assert(run.version===VERSION && run.source==="strata-twin-model","Unsupported journal version or source");
+    assert(Array.isArray(run.commands) && run.commands.length<=MAX_COMMANDS,"Journal exceeds replay limit");
+    assert(run.commands.reduce((n,c)=>n+(c?.type==="ADVANCE"&&Number.isInteger(c.ticks)?c.ticks:0),0)<=1500,"Journal exceeds 1500-tick replay limit");
+    const state=initial({sites:run.siteDesigns});for(const command of run.commands)dispatch(state,command);
+    assert(canonical(journalSummary(state))===canonical(run.finalSummary),"Replay differs from journal summary");return state;
   }
   function summarizeMetrics(metrics) {
     const count = metrics.length; const latencies = metrics.filter((m) => Number.isFinite(m.latencyMs)).map((m) => m.latencyMs);
@@ -472,7 +503,7 @@
     assert(state.tick + horizon <= 1500, "Forecast exceeds the session limit");
     const baseline = clone(state); const candidate = clone(state);
     assert(candidate.commands.length + 3 < MAX_COMMANDS, "Export and reset before forecasting more changes");
-    dispatch(candidate, {type: "PROPOSE", site: request.site, action: request.action, reason: "Detached what-if experiment", actor: "operator"});
+    dispatch(candidate, {type: "PROPOSE", site: request.site, action: request.action, ...(request.plan ? {plan:request.plan} : {}), reason: "Detached what-if experiment", actor: "operator"});
     const jobId = candidate.jobs.at(-1).id;
     dispatch(candidate, {type: "APPROVE", jobId, actor: "reviewer"}); dispatch(candidate, {type: "EXECUTE", jobId, actor: "operator"});
     for (let n = 0; n < horizon; n++) {tick(baseline); tick(candidate);}
@@ -499,5 +530,5 @@
       " address-family ipv4 unicast", `  network ${value.service}`, `  network ${management}/32`, "  neighbor 10.250.0.1 route-map PRIMARY in",
       "  neighbor 10.251.0.1 route-map SECONDARY in", "  neighbor 10.250.0.1 route-map EXPORT out", "  neighbor 10.251.0.1 route-map EXPORT out", " exit-address-family", ""].join("\n");
   }
-  return {VERSION, MAX_COMMANDS, assumptions, actions, slices, scenarios, initial, step, exportRun, replay, migrate, summarize, forecast, lag, nativeFrr, canonical, prefix, healthy};
+  return {VERSION, MAX_COMMANDS, assumptions, actions, slices, scenarios, cases:E.cases, probes:E.probes, diagnose:E.diagnose, initial, step, exportRun, exportJournal, replay, migrate, summarize, forecast, lag, nativeFrr, canonical, prefix, healthy};
 });

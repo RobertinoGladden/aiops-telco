@@ -20,7 +20,7 @@ Choose a platform and **Current modeled preference**, **Candidate: prefer backup
 
 Provision connected service/loopback/transit routes and map actual interfaces before native testing. Check OS syntax, existing policies, licenses and platform-specific activation. The fragments deliberately do not invent QoS capacity commands, credentials, RF control or a universal commercial-device configuration. In particular, RouterOS BGP setup has release-specific changes, so only its routing filter definitions are exported.
 
-`lab/config/vendors/` contains 21 materialized baseline fragments (seven profiles × three sites) and a manifest of intent, target and source. These are reproducible with:
+`lab/config/vendors/` contains 168 materialized baseline fragments (seven profiles × 24 sites) and a manifest of intent, target and source. These are reproducible with:
 
 ```powershell
 node scripts/package_native_configs.cjs
@@ -53,7 +53,7 @@ Actual RET needs a compatible AISG controller and equipment-specific integration
 
 ## Export pack and verification
 
-**Export native lab pack** downloads JSON containing the text and SHA-256 hashes of 36 explicitly selected public config files, the current site's seven routing policies and its last calculated commissioning values. Static baseline files and current policies are separate entries. This JSON container preserves file contents; it is not a directly executable Compose deployment or an archive extractor.
+**Export native lab pack** downloads JSON containing the text and SHA-256 hashes of 183 explicitly selected public config files, the current site's seven routing policies and its last calculated commissioning values. Static baseline files and current policies are separate entries. This JSON container preserves file contents; it is not a directly executable Compose deployment or an archive extractor.
 
 The pack excludes `.env`, private SSH material and runtime data by a fixed file allowlist. A repository Vercel build regenerates it with Node.js; it never requires Docker or a running backend.
 
@@ -63,3 +63,9 @@ node --test tests/test_twin.cjs tests/test_device_configs.cjs tests/test_vercel.
 ```
 
 These checks verify bounded intent, unsafe input rejection, arithmetic, fixture bindings and file integrity. They do not validate vendor parsers or prove 1:1 field equivalence. That claim requires specific equipment/OS versions, native execution and comparable measurements.
+
+## Fleet model and native execution scope
+
+The public v3 blueprint declares 24 sites, grouped into six regional capacity domains. Routing fragments cover all 24 declared private identities. The optional executable Docker topology and its FRR/Open5GS reference files remain a **three-site lab**, preserving the existing resource footprint. Additional fleet fragments require interface/address mapping and topology provisioning before native execution; exporting them does not create those devices.
+
+Advanced MTU, timing, CPU, shared capacity, radio and battery actions are normalized **model intent**, visible in change details and the resolution dossier. They are not compiled into universal vendor CLI. RF feeder repair and emergency battery commissioning are modeled field work orders. A failed configuration change cannot undo completed physical work; the model retains that work and reports degraded recovery when applicable.

@@ -1,90 +1,87 @@
-# Strata Twin — owned telecom operations simulator
+# Strata Twin — multi-region engineering lab
 
-Strata Twin runs entirely in the browser as static assets on Vercel. It needs no Docker, VPS, provider keys or Hub login. The development laptop can be off after deployment. Each visitor owns an isolated browser-local run; the simulated clock advances on commands or during visible-browser playback. Leaving the lab or hiding the page pauses playback. There is no shared cloud database or unattended scheduler.
+Strata runs as static browser assets on Vercel. No Docker, VPS, provider key or Hub login is required for Twin. Each visitor has an isolated local run; playback pauses when the browser is hidden or the lab is left. Live Operations remains a separate Hub integration.
 
-This is an executable behavioral model, not a 100% reproduction of the cataloged software. The UI labels every result as modeled. Real protocol implementations, device operating systems, vendor APIs and physical RF require their actual software/equipment. A 100% equivalence claim would be incorrect.
+The v3 fleet contains **24 sites across Jakarta, Bandung, Surabaya, Medan, Denpasar and Makassar**. Every site has private management/service prefixes, distinct VLANs/ASN, primary/backup routing, service telemetry and modeled radio/power dependencies. Results are calculated behavior, not measurements or complete vendor/protocol emulation.
 
-## Start and demonstrate
-
-For an existing Python environment:
+## Start
 
 ```powershell
 node deploy/vercel/build.mjs
 .\venv\Scripts\python.exe -m http.server 8083 --bind 127.0.0.1 --directory deploy\vercel\public
 ```
 
-Open `http://127.0.0.1:8083/#twin`. The initial observation at T+1 is computed from declared topology, not random telemetry.
+Open `http://127.0.0.1:8083/#twin`. The first observation is calculated at T+1.
 
-The main navigation has three entries: **Digital Twin**, **Live Operations** (Overview, Service health, Incidents, Assets), and **Workspace** (Connections, AI review, Settings). The public software catalog page has been removed. Old `/#ecosystem` links resolve to Twin.
+The six lab layers are **Fleet monitor**, **Site equipment**, **Engineering cases**, **Operations**, **Changes** and **Evidence**. Fleet monitoring uses six regional groups with compact site tiles, filters and an expandable telemetry ledger. Network and equipment panels stretch to equal heights within each desktop row. The carbon/steel palette, rounded borders, halftone, loading/skeleton states, dialog animation and reduced-motion support remain consistent.
 
-The lab has six layers: Network, Site equipment, Scenarios, Operations, Changes and Evidence. **Site equipment** provides seven representative vendor routing profiles, 12 equipment roles, native config exports and separate commissioning arithmetic. See [configuration targets and boundaries](DEVICE_CONFIGURATION.md).
+## Demonstrate an engineering investigation
 
-The workspace uses a carbon/steel palette, rounded grid panels, halftone surfaces, sticky layer navigation, animated dialogs and panel transitions. A loading screen reflects actual blueprint/replay initialization; summary skeletons cover pending data. Reduced motion disables the decorative transitions. Playback pauses when entering the equipment workbench, and unsaved numeric edits survive model-clock updates.
+1. Save a checkpoint. Open **Engineering cases**, select **The green-link blackhole** and inject it. The UI observes one tick and opens the fleet investigation.
+2. Inspect the latency and the MTU hypothesis. Collect a **Path MTU / packet-size test**. It records both link state and packet/backup-MTU constraints against the current site configuration and fault context.
+3. To demonstrate a wrong fix, propose **Prefer backup path** in Changes. Review independently, execute as Operator and advance eight ticks. Large packets fail despite up interfaces. Three failed verification samples trigger rollback; recovery still reports the delayed primary as degraded.
+4. Collect a fresh MTU probe, stage **MTU-safe backup failover**, then preview. Create the candidate, open its detail dialog, use Reviewer to approve and Operator to execute. These are explicitly modeled roles, not secure authentication.
+5. Advance six ticks. The change passes three observations after convergence; the case requires diagnostics, a verified change and three stable scoped service/visibility observations before reporting solved.
+6. Export the **resolution dossier** for probes, patches, resource budgets, scope observations, rollback and case history. Export the **run journal** for exact command reproduction. Evidence also supports four replay-validated checkpoints.
 
-1. **Save checkpoint** before experimenting. Under **Scenarios**, load **Transport failover**. Press **Play** at 1× or 4×, or advance manually. The timeline applies primary failure after two ticks and restoration after twelve; routing observes link changes three ticks later. Presets append faults to the current state rather than resetting it.
-2. Pause, choose a site with its primary preference still at baseline, then **Inject delay incident**. The model applies 120 ms, advances five ticks and confirms an incident.
-3. Under **Changes**, choose **Prefer backup path** and **Preview impact**. Compare the next 12 ticks of baseline and candidate SLA, throughput and latency for all three sites. This detached branch uses the same scheduled faults, configuration convergence, verification and rollback rules. It does not create a current-run approval or apply configuration. Export the comparison if needed.
-4. **Create candidate**, switch to **Reviewer**, inspect and approve. Close the dialog, switch to **Operator**, inspect and execute. Advance five ticks to inspect verification and incident recovery. Intended configuration remains separate until the Reviewer accepts verified intent.
-5. Under **Operations**, stop Object store and advance: its offsets stay fixed while detection continues. Restore it and advance to drain the backlog. Invalid schemas go to per-group DLQ before source offsets commit; redelivery demonstrates effect deduplication.
-6. Under **Network**, expand **Access & mobile sessions**. Request a lease, register `demo-1` with a slice and step twice. Choose another **Handover target**, then **Handover** in its row. There is a two-tick modeled interruption; successful handover preserves the PDU address and reallocates throughput at the destination.
-7. Under **Evidence**, restore a saved checkpoint. The confirmation replaces the current run only after its replay validates. The four most recent checkpoints are retained; export any checkpoint to keep it independently.
-8. **Export run** and **Replay file** to recompute every command and check its claimed final state. Version 1 files first pass the original v1 engine, then their commands are reinterpreted under v2 rules. The original v1 browser save is retained. A new v2 export records the resulting v2 state.
+Cases append faults to the current world. They do not reset unrelated faults. Use a checkpoint or reset before isolated demonstrations; compound cases can prevent an otherwise reasonable fix from verifying.
 
-The **Network** latency/loss graphs and SLA window use the last 60 calculated ticks, including ticks when the broker is unavailable. Gaps indicate unavailable latency. These calculations are not measurements from equipment.
-
-The actor selector is a demonstration of review rules, not secure multi-user authentication. Users can edit their local browser data. Replay detects disagreement between a command log and its claimed state, but does not authenticate who created the log or prevent a fully rewritten consistent log.
-
-## Implemented contracts
-
-| Domain | Model behavior | Boundary |
+| Case | Coupled symptoms | Investigation / recovery |
 |---|---|---|
-| Inventory/IPAM | Private non-overlapping prefixes, unique VLAN/ASN allocation, intent vs running revisions | Selected three-site design; no NetBox API/ORM |
-| Routing | Primary preference 100, backup 80/200; usable route selection, failure hold delay, convergence | No complete BGP selection algorithm or protocol packets |
-| Traffic | Link demand/capacity/loss, extra delay, shared core bottleneck | Fluid arithmetic, no TCP or packet scheduler |
-| Access | 40-address DHCP pool, collision prevention, renewal/expiry, derived DNS label | No DHCP/DNS/RADIUS servers |
-| Mobile | Subscriber allowlist, admission, registration, PDU IP, release, weighted slices, two-tick handover, source-cell fallback and capacity sharing | No 3GPP messages, cryptography, physical RF or MAC scheduling |
-| Event stream | Three partitions, independent groups, pending outbox, retry, DLQ and event-ID dedup | No Kafka brokers, consensus, rebalance or wire protocol |
-| Storage | Idempotent JSON objects and model object versions, availability failure | Browser-local state; no S3 protocol, erasure coding or Parquet |
-| Monitoring | Three breaches confirm, two recoveries resolve; explicit missing latency for failed paths | Calculated metrics, no SNMP/PromQL or actual measurements |
-| Changes | Independent modeled review, 60-tick expiry, context/revision guard, serial site execution, convergence/verification/rollback | No SSH/device execution; failed rollback recovery remains explicitly degraded |
-| Evidence | Command log, audit transitions, observations, pending/acknowledged delivery, reproducible replay | Not authenticated or tamper-proof audit storage |
+| Green-link blackhole | Delayed primary; backup is up but has smaller MTU and blocked PMTUD | MTU probe, size mitigation plus preference change |
+| A bottleneck that moves | Four regional sites surge; access, aggregation and core constrain delivery; other regions lose traffic | Queue probe; edit access, regional and core budgets; verify all 24 sites |
+| Transport healthy, radio degraded | PTP holdover exceeds lab tolerance while feeder VSWR also degrades radio | Timing and RF probes; alternate clock plus modeled feeder work order. Clock alone fails |
+| Interfaces up, routing exhausted | Policy drift accepts 1,200 prefixes; modeled CPU saturates; path delay distracts | BGP/CPU probe; exact-prefix import guard |
+| Delayed site brownout | Grid absent, initially working links, battery depletion, simultaneous transport/radio loss | DC/battery probe; commission finite reserve; energy continues draining |
+| Silent alarms, degraded service | Broker/detection unavailable; telemetry backlogs conceal primary degradation | Recover ingestion/visibility first, then repair transport. Pipeline verification alone does not solve service |
 
-`lab/reference/twin-coverage.json` maps **all 50 catalog entries**: **25 selected contracts are modeled**, **23 are reference only**, and **2 are external AI providers**. Shared contracts represent operational roles; they are not 25 original software installations. The software catalog and coverage map are internal references excluded from the public deployment; see [the native software reference](LAB_REFERENCE.md). Twin never calls Groq/OpenAI or fabricates an AI response. Existing provider adapters remain in the separate real backend.
+Lab L3/L4 labels indicate scenario difficulty, not an industry certification or production severity.
 
-## Model rules
+## Coordinated recovery demonstration
 
-- One tick equals one simulated second. Link failures update routing knowledge after three ticks. A reviewed preference change converges after two ticks.
-- Each primary has 250 Mbps capacity, backup 180 Mbps (350 after the allowed capacity change), and all sites share 500 Mbps core capacity.
-- Base RTTs are 8/11/14 ms primary and 20/23/26 ms backup. Extra queue delay is `max(0, demand/capacity - 1) × 20 ms`.
-- Per-site delivery before the core bottleneck is `min(demand, capacity) × (1 - linkLoss/100)`. If aggregate delivery exceeds 500 Mbps, all deliveries are scaled by `500/aggregate`.
-- Modeled loss also includes excess demand and core overflow. These fluid loss assumptions are intentionally simple; they do not predict real TCP throughput.
-- Path thresholds are availability, loss ≤5%, RTT ≤50 ms, and delivery ≥`min(100, demand × 0.95)` Mbps. Three post-convergence observations decide a change. Failed verification restores the baseline configuration, then collects two recovery observations. Restored configuration can still have a degraded path.
-- Storage and detection groups commit independently after their own modeled effect. Schema 99 is deliberately invalid. Duplicate effects are suppressed by event ID; duplicate stream records are retained.
-- DHCP addresses use hosts .10–.49 of each /24 and expire after 30 ticks. Subscribers demo-1…demo-6 use DNN internet. Broadband slice 1-000001 has a 25 Mbps cap/weight 1; Critical 1-000002 has a 10 Mbps cap/weight 3; IoT 1-000003 has a 2 Mbps cap/weight 1. Weighted max-min allocation redistributes unused capped shares within the smaller of 40 Mbps cell budget and transport delivery. Allocations are floored to 0.01 Mbps to avoid oversubscription. PDU addresses come from 10.45.0.x.
-- Handover requires an active PDU, a different target cell and an available modeled core/target cell. It interrupts throughput until the second tick. A target-cell failure falls back to an available source cell; both-cell or core failure rejects the session. There is no RF measurement or real 3GPP handover signaling.
-- Scheduled faults accept a 1–120 tick delay, at most 16 pending entries and the same bounded values as direct faults. Cancelling a pending entry does not undo applied faults. Scenario presets operate on the current world, so an existing preference change or impairment can alter the result.
-- What-if uses a detached baseline and approved candidate branch, advancing each for 12 ticks by default. The reported job state covers the normal three-observation verification window; the longer comparison can still reveal later degradation. Preview is deterministic arithmetic, not an AI prediction or an approval.
-- Checkpoints and run saves use browser storage. The four-checkpoint limit retains recent snapshots; quota failure is explicit and an in-memory checkpoint can still be exported. Restore confirms replacement and validates replay.
-- Runs are bounded to 1,200 commands and 1,500 ticks. There is no silent history truncation. Export/reset when the limit is reached. Browser storage quotas vary; on save failure the UI says the run is in memory and should be exported.
-
-The fixed topology and public subscriber IDs are declared scenario fixtures. Metrics and state transitions are derived from those inputs; they are never labeled as live equipment data.
-
-## Export and extend
-
-**Export FRR candidate** downloads a prefix-filtered configuration matching the isolated lab's two cores. It contains the modeled preference only; capacity, loss and delay are not FRR configuration. Review it against `lab/config/frr/` and the actual interfaces before lab execution. Export does not apply a change.
-
-Verify a run without services:
+**Replay solved campaign** opens a reviewed replacement dialog and loads the checked-in public example. It injects all six cases at separate regional origins, observes the resulting service/visibility failures, collects seven probes, reviews one nine-site patch set with shared capacity changes, and verifies every site. At T+12 all six cases are solved with 24 healthy sites and zero consumer lag. Its 19 commands are reproducible with:
 
 ```powershell
-node scripts/replay_twin.cjs "$env:USERPROFILE\Downloads\strata-twin-run.json"
-node --test tests/test_twin.cjs tests/test_device_configs.cjs tests/test_vercel.mjs
+node scripts/replay_twin.cjs console/assets/twin-solved-example.json
 ```
 
-The v2 blueprint is `console/assets/twin-blueprint.json`; `twin-model-v1.js` exists only to verify legacy evidence.
+For your own compound run, inject cases at different sites, advance to observe current conditions, then **Run active-case diagnostics**. This issues actual bounded probe commands for each active case. **Stage coordinated recovery** compiles the declared case remedies into a reviewable normalized patch bundle, shared resource plan and modeled work orders. It does not execute on selection. Inspect the bundle and required probe list, preview impact, create/review/execute, then observe scoped verification. Unrelated faults outside the declared remedy set can still fail the plan and trigger rollback.
 
-The pure engine is `console/assets/twin-model.js`; rendering/persistence is `console/assets/twin.js`. Add behavior by defining a bounded command, transition rules, failure semantics, coverage boundary and scenario test. Keep model results separate from real Hub measurements.
+## Model rules and boundaries
 
-For protocol comparison, use the optional [Docker lab definitions](EXECUTABLE_LAB.md). Those definitions have not been executed on this laptop. Until a real FRR/Open5GS/Kafka run supplies comparable observations, this model has no empirical equivalence validation.
+- One tick is one simulated second. Routing observes link changes after three ticks; configuration converges after two. Base primary RTT repeats 8/11/14 ms; backup 20/23/26 ms.
+- Access capacities start at 250 Mbps primary and 180 Mbps backup. Each region has 500 Mbps; the shared fleet core has 3,200 Mbps. The preserved three-site compatibility model uses a 500 Mbps core.
+- Fluid delivery starts at `min(demand, accessCapacity) × (1 - linkLoss/100)`, then scales within the region and shared core. Excess demand and regional queueing add modeled delay. This is not TCP or a packet scheduler.
+- The MTU case models a 1,380-byte packet against a 1,280-byte backup path with blocked PMTUD. MSS mitigation is a model rule, not an implementation of TCP negotiation or ICMP.
+- Import overload models `min(100, 10 + acceptedPrefixes × 0.08)` percent CPU. Exact-prefix guarding admits at most one of the injected prefixes. These are declared causal assumptions, not calibrated router performance.
+- PTP loss increases offset by 0.75 µs per tick; alternate reference returns it to 0.3 µs. A 5 µs tolerance is a **lab threshold**, not a universal RAN timing standard.
+- Feeder reflected-power fraction is `((VSWR - 1)/(VSWR + 1))²`. High VSWR and timing failure independently degrade modeled radio health. There is no antenna pattern, propagation map, baseband or real RF measurement.
+- Grid loss drains usable energy at `loadW / 3600` Wh per tick. The case starts with 1 Wh battery; emergency commissioning enables a finite 480 Wh reserve at an 800 W load. The model omits voltage curves, temperature, aging and protection losses.
+- Service health requires available transport, loss ≤5%, RTT ≤50 ms, delivery ≥`min(100, demand × 0.95)` Mbps, and healthy modeled radio/timing/power. Visibility health separately requires broker, storage, detection, zero outbox and caught-up consumer offsets.
+- Advanced changes require current diagnostic evidence (30-tick window), independent review and unchanged site/resource context. Queue diagnostics also bind the whole fleet's configuration/demand/resource context. Active scopes cannot overlap. Global capacity plans verify every site and retain previously healthy sites as regression guards.
+- Editable capacity plans accept 100–1,000 Mbps access and 100–50,000 Mbps regional/core budgets. A local upgrade with an unchanged congested core rolls back. Preview uses the same probes, faults and verification rules in detached branches; it cannot manufacture missing evidence.
+- Three post-convergence observations decide verification. Failed plans revert touched configuration/resources, then observe recovery twice. Completed modeled field work is retained; rollback cannot unrepair a physical feeder. A reverted baseline may remain degraded.
+- A solved case can become degraded again after later faults. Its first solved timestamp remains historical evidence; the current state follows current health.
+- The event model retains three partitions, independent acknowledge-before-commit consumer offsets, outbox retry, per-group dead-letter delivery and event-ID effect deduplication. No Kafka brokers, consensus or S3 protocol run in the browser.
+- DHCP pools have 40 addresses and 30-tick leases. Six public demo subscribers use weighted Broadband/Critical/IoT slice caps and a modeled cell/transport budget. Handover interrupts for two ticks and preserves the PDU address on success; radio or core failure can reject/fall back. No NAS, SCTP, GTP or SIM cryptography is implemented.
+- Scheduled playbooks remain available under Engineering cases. Scheduling permits 1–120 ticks ahead and at most 16 pending faults. Commands are bounded to 1,200 and the clock to 1,500 ticks.
+
+The optional native software reference still covers 50 catalog roles, with explicit modeled/reference/provider boundaries. Twin does not call Groq/OpenAI or fabricate provider output.
+
+## Evidence and compatibility
+
+Browser saves, checkpoints and **Export run** use compact `strata-twin-journal` files. They contain site designs, all commands and a structural final summary (configurations, resources, cases, probes, changes, counters, offsets and current observations). Replay rebuilds the full telemetry history/object evidence and compares the summary. This avoids repeatedly storing all generated telemetry in local storage. It is reproducibility validation, not a signed audit or creator authentication.
+
+The pure API retains full `strata-twin-run` export/replay and verifies v1/v2 runs with frozen engines before reinterpretation into the three-site compatibility model. The current fleet UI accepts its own declared 24-site designs; it does not silently expand old three-site runs. Browser keys v1/v2 and their checkpoints are retained separately. Export prior runs from Evidence if present. Quota errors are explicit; export in-memory evidence before closing.
+
+```powershell
+node scripts/replay_twin.cjs path/to/strata-twin-journal.json
+node --test tests/test_twin.cjs tests/test_engineering.cjs tests/test_device_configs.cjs
+```
+
+The public blueprint is `console/assets/twin-blueprint.json`; frozen three-site designs are `lab/reference/twin-blueprint-v2.json`. `twin-model.js` handles transport/mobile/events; `twin-engineering.js` handles causal equipment, cases, diagnostic evidence and scoped changes; `twin.js` renders the workspace.
+
+Seven version-scoped routing profiles generate 168 fleet fragments; the public pack contains 183 explicit config files. Advanced RF/timing/energy/capacity actions are model intent and field work orders, not universal vendor CLI. The optional Docker topology remains a three-site reference lab and has not been run here. See [configuration boundaries](DEVICE_CONFIGURATION.md) and [the native lab guide](EXECUTABLE_LAB.md).
 
 ## Deploy from this folder through Git remote
 

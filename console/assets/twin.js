@@ -3,8 +3,8 @@
   const M = window.StrataTwin;
   const D = window.StrataDevices;
   let nativePack, generatedConfig, plans = {}, drafts = {}, rfSite = "";
-  const key = "strata:twin:2";
-  const checkpointKey = "strata:twin:checkpoints:2";
+  const key = "strata:twin:3";
+  const checkpointKey = "strata:twin:checkpoints:3";
   const $t = (selector) => document.querySelector(selector);
   let state, catalog, tabName = "network", initialized = false, timer = null, forecast = null, checkpoints = [];
   const node = (tag, className, text) => {
@@ -22,7 +22,7 @@
     $t("#twin-message").classList.toggle("has-error", error);
   }
   function save() {
-    try {localStorage.setItem(key, JSON.stringify(M.exportRun(state, catalog)));}
+    try {localStorage.setItem(key, JSON.stringify(M.exportJournal(state, catalog)));}
     catch {message("Browser storage is full or unavailable. This run is in memory; export it before closing this page.", true);}
   }
   function run(command, note = "Model state updated. Advance the clock to observe the effect.") {
@@ -58,60 +58,90 @@
   function stats() {
     const open = state.incidents.filter((i) => i.state === "open").length;
     const verified = state.jobs.filter((j) => j.state === "verified").length;
-    const summary = M.summarize(state, selected());
-    const items = [[number(summary.slaPct, "%"), "Target SLA attainment", `${summary.healthyTicks} / ${summary.observations} healthy ticks · last 60`],
+    const fleet = Object.values(state.sites);
+    const items = [[`${fleet.filter(s=>M.healthy(s.metrics)).length}/${fleet.length}`, "Sites within service thresholds", `${Object.keys(state.regions).length} regions · transport + radio + power`],
       [open, "Open modeled incidents", "Three breaches confirm an incident"],
       [M.lag(state, "storage"), "Storage consumer lag", `${state.outbox.length} events waiting in outbox`],
-      [verified, "Verified modeled changes", "Three observations after convergence"]];
+      [state.cases.filter(c=>c.state==="solved").length, "Engineering cases solved", `${verified} verified change${verified===1?"":"s"} · scoped recovery evidence`]];
     $t("#twin-stats").replaceChildren(...items.map(([count, title, hint]) => {
       const card = node("article", "twin-metric"); card.append(node("strong", "", count), node("b", "", title), node("small", "", hint)); return card;
     }));
     const experiment = state.experiments.at(-1);
-    $t("#twin-experiment-name").textContent = experiment ? M.scenarios[experiment.scenario].label : "Regional lab · baseline";
-    $t("#twin-experiment-status").textContent = `${selected()} selected · ${Object.values(state.sites).filter((s) => M.healthy(s.metrics)).length}/3 paths healthy · ${state.schedule.filter((e) => e.state === "pending").length} faults pending · ${state.commands.length} commands recorded`;
+    const currentCase = state.cases.at(-1);
+    $t("#twin-experiment-name").textContent = state.cases.length && state.cases.every(c=>c.state==="solved") ? `${state.cases.length} investigation${state.cases.length===1?"":"s"}. Fleet recovery verified.` : currentCase ? M.cases[currentCase.caseId].label : experiment ? M.scenarios[experiment.scenario].label : "A network built to be investigated.";
+    $t("#twin-experiment-status").textContent = `${selected()} selected · ${state.cases.filter(c=>c.state!=="solved").length} active investigations · ${state.schedule.filter((e) => e.state === "pending").length} scheduled faults · ${state.commands.length} replayable commands`;
     $t("#twin-clock").textContent = `T+${String(state.tick).padStart(4, "0")}`;
   }
+  function selectSite(id) {
+    $t("#twin-site").value=id;forecast=null;render();
+  }
+  function capacityRequest() {
+    return $t("#twin-action").value==="capacity_plan" ? {plan:{accessCapacity:Number($t("#twin-plan-access").value),regionalCapacity:Number($t("#twin-plan-region").value),coreCapacity:Number($t("#twin-plan-core").value)}} : {};
+  }
+  function stageAction(action,reason) {
+    pause();$t("#twin-action").value=action;$t("#twin-reason").value=reason.slice(0,200);changes();switchTab("changes");
+    message("Plan selected. Inspect the scope and preview impact, then create a candidate for independent review.");
+  }
   function topology() {
-    const ns = "http://www.w3.org/2000/svg";
-    const svgNode = (tag, attrs, text) => {const el = document.createElementNS(ns, tag);
-      for (const [key, value] of Object.entries(attrs)) el.setAttribute(key, value);
-      if (text) el.textContent = text; return el;};
-    const svg = svgNode("svg", {viewBox: "0 0 600 194", role: "img", "aria-label": "Modeled dual-core network paths for three sites"});
-    for (const target of Object.values(state.sites)) {
-      const x = 100 + target.index * 200;
-      for (const [name, link] of Object.entries(target.links)) {
-        const coreX = name === "primary" ? 200 : 400;
-        const active = target.selected === name && link.up;
-        svg.append(svgNode("path", {d: `M${coreX} 56 C${coreX} 92 ${x} 92 ${x} 132`, class: `twin-wire${active ? " selected" : ""}${link.up ? "" : " down"}`}));
+    const regions=Object.values(state.regions),fleet=Object.values(state.sites),target=state.sites[selected()];
+    const ns="http://www.w3.org/2000/svg";
+    const svgNode=(tag,attrs,text)=>{const el=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))el.setAttribute(k,v);if(text)el.textContent=text;return el;};
+    const svg=svgNode("svg",{viewBox:"0 0 660 170",role:"img","aria-label":"Dual-core paths to regional aggregation domains"});
+    for(const [i,region] of regions.entries()) {
+      const x=regions.length===1?330:55+i*550/(regions.length-1),members=fleet.filter(s=>s.region===region.id);
+      for(const [path,cx] of [["primary",225],["backup",435]]) {
+        const active=members.some(s=>s.selected===path&&s.links[path].up);
+        svg.append(svgNode("path",{d:`M${cx} 53 C${cx} 85 ${x} 85 ${x} 112`,class:`twin-wire${active?" selected":""}`}));
       }
+      svg.append(svgNode("rect",{x:x-40,y:112,width:80,height:46,rx:10,class:`twin-node${target.region===region.id?" target":""}`}),
+        svgNode("text",{x,y:131,"text-anchor":"middle",class:"twin-svg-title"},region.id),svgNode("text",{x,y:146,"text-anchor":"middle",class:"twin-svg-small"},`${region.capacity} Mbps`));
     }
-    for (const [x, title, subtitle] of [[200, "CORE PRIMARY", "AS 65100"], [400, "CORE BACKUP", "AS 65200"]]) {
-      svg.append(svgNode("rect", {x: x - 76, y: 8, width: 152, height: 48, rx: 12, class: "twin-node"}),
-        svgNode("text", {x, y: 29, "text-anchor": "middle", class: "twin-svg-title"}, title),
-        svgNode("text", {x, y: 44, "text-anchor": "middle", class: "twin-svg-small"}, subtitle));
-    }
-    for (const target of Object.values(state.sites)) {const x = 100 + target.index * 200;
-      svg.append(svgNode("rect", {x: x - 69, y: 132, width: 138, height: 48, rx: 12, class: `twin-node${target.id === selected() ? " target" : ""}`}),
-        svgNode("text", {x, y: 153, "text-anchor": "middle", class: "twin-svg-title"}, target.id),
-        svgNode("text", {x, y: 169, "text-anchor": "middle", class: "twin-svg-small"}, `AS ${target.asn} · VLAN ${target.serviceVlan}`));}
-    $t("#twin-topology").replaceChildren(svg, node("small", "twin-note", "Shared core: 500 Mbps · Moving lines show the selected modeled path"));
-    $t("#twin-network").replaceChildren(...Object.values(state.sites).map((target) => {
-      const card = node("article", "twin-site-card"); const metric = target.metrics;
-      const drift = M.canonical(target.intent) !== M.canonical(target.config);
-      card.append(node("span", "eyebrow", target.id), node("h3", "", target.name),
-        node("span", "tag", !metric ? "UNOBSERVED" : M.healthy(metric) ? "MODELED / WITHIN THRESHOLDS" : "MODELED / DEGRADED"));
-      const values = [["Selected route", target.selected || "No route"], ["Convergence", target.convergence ? `${target.convergence} ticks remaining` : "Settled"],
-        ["Latency", number(metric?.latencyMs, " ms")], ["Loss", number(metric?.lossPct, "%")], ["Delivered", number(metric?.throughputMbps, " Mbps")],
-        ["Observation", metric ? `T+${metric.tick}` : "Not calculated"], ["Configuration", `r${target.revision} · ${drift ? "intent drift" : "matches intent"}`]];
-      for (const [title, value] of values) {const row = node("div", "twin-site-row"); row.append(node("span", "", title), node("code", "", value)); card.append(row);}
-      card.append(button(target.id === selected() ? "Selected site" : "Select site", () => {$t("#twin-site").value = target.id; forecast = null; render();}, false, `twin-select-${target.id}`));
-      card.append(button("Inspect site state", () => json(`${target.id} / modeled state`, target)));
-      return card;
+    for(const [x,name] of [[225,"PRIMARY CORE"],[435,"BACKUP CORE"]])svg.append(svgNode("rect",{x:x-85,y:7,width:170,height:46,rx:12,class:"twin-node"}),svgNode("text",{x,y:27,"text-anchor":"middle",class:"twin-svg-title"},name),svgNode("text",{x,y:42,"text-anchor":"middle",class:"twin-svg-small"},`Shared budget ${state.core.capacity} Mbps`));
+    $t("#twin-topology").replaceChildren(svg,node("small","twin-note",`Core demand ${fleet.reduce((n,s)=>n+s.demand,0)} / ${state.core.capacity} Mbps · Regional budgets constrain both paths`));
+    const filter=$t("#twin-fleet-filter").value;
+    const visible=fleet.filter(s=>filter==="degraded"?!M.healthy(s.metrics):filter==="selected-region"?s.region===target.region:true);
+    $t("#twin-fleet-caption").textContent=`${visible.length} of ${fleet.length} sites shown · calculated at T+${state.tick} · ${state.services.broker&&state.services.detector?"detection active":"observability interrupted; inspect Operations"}`;
+    const groups=regions.filter(r=>visible.some(s=>s.region===r.id)).map(region=> {
+      const group=node("article","twin-region");const members=fleet.filter(s=>s.region===region.id),head=node("div","twin-region-heading");
+      head.append(node("b","",region.name),node("span","",`${members.filter(s=>M.healthy(s.metrics)).length}/${members.length} healthy`));
+      const demand=members.reduce((n,s)=>n+s.demand,0),bar=node("div","twin-capacity-bar"),fill=node("span");fill.style.width=`${Math.min(100,demand/region.capacity*100)}%`;bar.append(fill);
+      const tiles=node("div","twin-site-tiles");
+      for(const site of visible.filter(s=>s.region===region.id)) {
+        const m=site.metrics,healthy=M.healthy(m),tile=button("",()=>selectSite(site.id),false,`twin-select-${site.id}`);
+        tile.className=`twin-site-tile${site.id===selected()?" selected":""}${healthy?"":" degraded"}`;tile.setAttribute("aria-pressed",String(site.id===selected()));
+        tile.setAttribute("aria-label",`${site.id}, ${healthy?"healthy":"degraded"}, select site`);
+        const top=node("span","twin-tile-top");top.append(node("b","",site.id),node("i",healthy?"twin-state-dot":"twin-state-dot degraded"));
+        tile.append(top,node("small","",site.name),node("span","twin-tile-metrics",`${number(m?.latencyMs," ms")} / ${number(m?.lossPct,"% loss")}`),node("em","",healthy?`${site.selected} · ${number(m?.throughputMbps," Mbps")}`:m?.symptoms[0]||"Service outside thresholds"));tiles.append(tile);
+      }
+      group.append(head,node("small","twin-region-budget",`${demand} / ${region.capacity} Mbps offered`),bar,tiles);return group;
+    });
+    $t("#twin-network").replaceChildren(...(groups.length?groups:[node("p","twin-empty","No sites match this filter. All calculated service thresholds are currently met.")]));
+    $t("#twin-fleet-ledger").replaceChildren(table(["Site / region","Service","Path","RTT","Loss","Delivered","CPU","Timing","VSWR","DC energy","Configuration","Evidence"],visible.map(s=> {
+      const m=s.metrics;return [s.id+" / "+s.region,M.healthy(m)?"Healthy":"Degraded",s.selected||"none",number(m?.latencyMs," ms"),number(m?.lossPct,"%"),number(m?.throughputMbps," Mbps"),number(m?.cpuPct,"%"),number(m?.timingOffsetUs," µs"),m?.vswr,number(m?.batteryWh," Wh"),`r${s.revision} · ${M.canonical(s.config)===M.canonical(s.intent)?"matches intent":"intent drift"}`,button("Inspect",()=>json(`${s.id} / observed state`,s))];
+    })));
+    for(const [id,value,unit] of [["delay",target.links.primary.delay," ms"],["loss",target.links.primary.loss,"%"],["demand",target.demand," Mbps"]]) {$t(`#twin-${id}`).value=value;$t(`#twin-${id}-label`).textContent=`${value}${unit}`;}
+  }
+  function investigation() {
+    const target=state.sites[selected()],causes=M.diagnose(state,selected());
+    $t("#twin-diagnosis-title").textContent=`${selected()} / causal investigation`;
+    $t("#twin-diagnosis").replaceChildren(...(causes.length?causes.map(c=> {
+      const card=node("article","twin-cause");card.append(node("b","",c.title),node("p","",c.evidence));const controls=node("div","twin-cause-actions");
+      controls.append(button("Collect evidence",()=>run({type:"RUN_PROBE",site:selected(),probe:c.probe},"Diagnostic evidence recorded. Inspect results before proposing a change."),actor()!=="operator"),button(c.action?"Stage recovery plan →":"Containment active",()=>{if(c.action)stageAction(c.action,`Investigate ${c.title}; verify service and scope after change`);},actor()!=="operator"||!c.action));card.append(controls);return card;
+    }):[node("div","twin-cause twin-baseline", "No threshold-derived hypothesis for this site. Inject an engineering case to investigate coupled faults; inspect probes to establish the baseline.")]));
+    $t("#twin-probes").replaceChildren(...Object.entries(M.probes).map(([type,title])=>button(title,()=>run({type:"RUN_PROBE",site:selected(),probe:type},"Probe evidence recorded with its site conditions and simulated timestamp."),actor()!=="operator",`twin-probe-${type}`)));
+    const recent=state.probes.filter(p=>p.site===selected()).slice(-3).reverse();
+    $t("#twin-probe-results").replaceChildren(...(recent.length?recent.map(p=> {
+      const row=node("div","twin-probe-row");row.append(node("span","",M.probes[p.type]),node("code","",`T+${p.tick} · ${state.tick-p.tick>30?"expired":"≤30 tick window"}`),button("Inspect result",()=>json(`${p.id} / diagnostic result`,p)));return row;
+    }):[node("p","twin-note","No probes recorded for this site. Advance after changing faults to sample current conditions.")]));
+    $t("#twin-campaign").disabled=actor()!=="operator";
+    $t("#twin-case-diagnostics").disabled=actor()!=="operator";
+    $t("#twin-case-library").replaceChildren(...Object.entries(M.cases).map(([id,c])=> {
+      const card=node("article","twin-engineering-card");const meta=node("div","twin-case-meta");meta.append(node("span","eyebrow",c.domain),node("span","tag",`LAB ${c.difficulty}`));
+      card.append(meta,node("h3","",c.label),node("p","",c.description),node("small","",`${c.scope.toUpperCase()} SCOPE · ${c.probes.length} DIAGNOSTIC${c.probes.length===1?"":"S"}`));
+      const active=state.cases.some(v=>v.caseId===id&&v.site===selected()&&v.state!=="solved");
+      card.append(button(active?"Investigation active":"Inject & observe case →",()=>{if(run({type:"APPLY_CASE",caseId:id,site:selected()})){run({type:"ADVANCE",ticks:1},"Case injected and observed. Inspect the hypotheses, collect probes and stage a reviewed recovery plan.");switchTab("network");}},actor()!=="operator"||active,`twin-case-${id}`));return card;
     }));
-    const target = state.sites[selected()];
-    for (const [id, value, unit] of [["delay", target.links.primary.delay, " ms"], ["loss", target.links.primary.loss, "%"], ["demand", target.demand, " Mbps"]]) {
-      $t(`#twin-${id}`).value = value; $t(`#twin-${id}-label`).textContent = `${value}${unit}`;
-    }
+    $t("#twin-case-register").replaceChildren(table(["Investigation","Origin / scope","State","Stable recovery","Evidence","Action"],[...state.cases].reverse().map(c=>[M.cases[c.caseId].label,`${c.site} / ${c.affected.length} sites`,label(c.state),`${Math.min(3,c.stableTicks)}/3 ticks`,c.solvedAt===null?"Awaiting service + visibility":`Solved at T+${c.solvedAt}`,button("Investigate",()=>{selectSite(c.site);switchTab("network");})]),"No engineering cases injected. Save a checkpoint, then choose an investigation above."));
   }
   function pipeline() {
     const services = [["broker", "Event broker", "broker_down"], ["storage", "Object store", "storage_down"], ["detector", "Detection consumer", "detector_down"]];
@@ -133,16 +163,23 @@
     const value = state.jobs.find((job) => job.id === jobId);
     const content = [line("State", label(value.state)), line("Author", value.author), line("Reviewer", value.approval?.actor),
       line("Expires at", `T+${value.expiresAt}`), node("p", "", value.reason)];
-    const pre = node("pre", "twin-json", Object.keys(value.candidate).map((key) => `${key}: ${value.before.config[key]} → ${value.candidate[key]}`).join("\n")); content.push(pre);
+    const changed=Object.keys(value.candidate).filter(key=>value.before.config[key]!==value.candidate[key]);
+    const pre = node("pre", "twin-json", changed.map(key=>`${key}: ${value.before.config[key]} → ${value.candidate[key]}`).join("\n") || "No per-site policy patch; inspect shared service changes below."); content.push(pre);
+    if(value.engineering)content.push(line("Operation",value.kind),line("Verification scope",`${value.affected.length} site${value.affected.length===1?"":"s"}`),line("Diagnostic evidence",(value.probeIds||[]).join(", ")||"Required before approval"),node("pre","twin-json",JSON.stringify(value.resources || (value.action==="restore_pipeline"?{broker:true,storage:true,detector:true}:{patch:M.actions[value.action].patch}),null,2)));
     const buttons = node("div", "twin-inline-actions");
+    buttons.append(button(actor()==="operator"?"Use Reviewer actor":"Use Operator actor",()=>{$t("#twin-actor").value=actor()==="operator"?"reviewer":"operator";render();jobDetails(jobId);}));
     buttons.append(button("Approve as reviewer", () => {if (run({type: "APPROVE", jobId})) jobDetails(jobId);}, actor() !== "reviewer" || value.state !== "proposed" || state.tick >= value.expiresAt),
       button("Execute as operator", () => {if (run({type: "EXECUTE", jobId})) jobDetails(jobId);}, actor() !== "operator" || value.state !== "approved" || state.tick >= value.expiresAt),
       button("Accept verified intent", () => {if (run({type: "ACCEPT_INTENT", jobId})) jobDetails(jobId);}, actor() !== "reviewer" || value.state !== "verified" || value.intentAcceptedAt != null));
-    content.push(buttons, node("div", "policy-note", "Modeled actors demonstrate separation of duties. These browser controls are not production authentication. Close this dialog, switch actor, then inspect the candidate again."),
-      node("pre", "twin-json", JSON.stringify(value, null, 2)));
+    const raw=node("details","twin-job-evidence");raw.append(node("summary","","Full change evidence JSON"),node("pre","twin-json",JSON.stringify(value,null,2)));
+    if(value.bundle){const patches=node("details","twin-job-evidence");patches.append(node("summary","",`Inspect ${Object.keys(value.bundle).length} site patches & work orders`),node("pre","twin-json",JSON.stringify(value.bundle,null,2)));content.push(patches,line("Required probes",value.requirements.map(r=>`${r.site}: ${r.type}`).join(" · ")));}
+    content.push(buttons,node("div","policy-note","Modeled actors demonstrate separation of duties. These browser controls are not production authentication. Use the actor switch above to review, then switch back to execute."),raw);
     detail(value.id, content, "MODELED CHANGE / REVIEW & EVIDENCE");
   }
   function changes() {
+    const action=M.actions[$t("#twin-action").value];
+    $t("#twin-capacity-plan").hidden=$t("#twin-action").value!=="capacity_plan";
+    $t("#twin-plan-note").textContent=$t("#twin-action").value==="coordinated_recovery" ? "Compile declared remedies for active engineering cases into a reviewable site patch set, regional/core capacity plan and field work orders. Collect diagnostics for every active case. Verify the entire fleet; unrelated faults can still fail the campaign." : action.patch ? `${action.kind}. Verification scope: ${action.scope==="fleet"?Object.keys(state.sites).length+" sites":selected()}. Required diagnostics: ${action.probes.map(p=>M.probes[p]).join(" + ")}. Advanced patches describe model intent; field work requires a real work order.` : "Routing preference/capacity change in the selected site. Forecast compares every site; independent review and three post-convergence observations are required.";
     $t("#twin-jobs").replaceChildren(table(["Change", "Site", "Action", "State", "Approval", "Evidence"], [...state.jobs].reverse().map((job) =>
       [job.id, job.site, M.actions[job.action].label, label(job.state) + (["proposed", "approved"].includes(job.state) && state.tick >= job.expiresAt ? " · expired" : ""), job.approval?.actor || "Required", button("Inspect & review", () => jobDetails(job.id))]),
       "No changes yet. Inject a delay incident, then propose a backup path. Review the candidate under the Reviewer actor."));
@@ -163,6 +200,9 @@
       [l.client, l.site, l.address, l.vlan, l.dns, `T+${l.expiresAt}`]), "No DHCP leases. Request one for the selected site."));
   }
   function evidence() {
+    const previous=[];
+    try {for(const version of [1,2])if(localStorage.getItem(`strata:twin:${version}`))previous.push(button(`Export previous v${version} run`,()=>downloadText(`strata-twin-v${version}-original.json`,localStorage.getItem(`strata:twin:${version}`))));}catch {}
+    $t("#twin-legacy-exports").replaceChildren(...previous);
     $t("#twin-audit").replaceChildren(...state.audit.slice(-14).reverse().map((entry) => {
       const row = node("article", "twin-audit-row"); row.append(node("code", "", `T+${String(entry.tick).padStart(4, "0")}`),
         node("span", "tag", entry.actor), node("div", "", `${label(entry.type)} · ${entry.detail}`)); return row;
@@ -171,7 +211,7 @@
       [key, versions.length, button("Inspect JSON", () => json(key, versions))]), "No modeled objects have been stored."));
   }
   function rules() {
-    $t("#twin-assumptions").replaceChildren(...M.assumptions.map((text) => node("p", "policy-note", text)));
+    $t("#twin-assumptions").replaceChildren(...state.assumptions.map((text) => node("p", "policy-note", text)));
   }
   function pause(note) {
     if (timer) clearInterval(timer); timer = null;
@@ -218,7 +258,7 @@
     };
     const sla = node("article", "twin-trend twin-sla"); sla.append(node("span", "eyebrow", "SLA WINDOW / LAST 60 TICKS"), node("strong", "", number(summary.slaPct, "%")),
       node("p", "", `${summary.outageTicks} unavailable ticks · ${summary.healthyTicks} healthy observations`),
-      node("small", "", "Healthy = path up, ≤50 ms RTT, ≤5% loss and sufficient throughput. Calculated model history."));
+      node("small", "", "Healthy = transport thresholds + modeled radio timing, feeder and power. Calculated history."));
     $t("#twin-trends").replaceChildren(plot("latencyMs", "TARGET LATENCY", " ms"), plot("lossPct", "TARGET LOSS", "%"), sla);
   }
   function renderForecast() {
@@ -231,7 +271,7 @@
     area.replaceChildren(card);
   }
   function saveCheckpoint() {
-    pause(); const checkpoint = {id: `checkpoint-${state.tick}-${Date.now()}`, name: `Checkpoint at T+${state.tick}`, tick: state.tick, run: M.exportRun(state, catalog)};
+    pause(); const checkpoint = {id: `checkpoint-${state.tick}-${Date.now()}`, name: `Checkpoint at T+${state.tick}`, tick: state.tick, run: M.exportJournal(state, catalog)};
     checkpoints = [checkpoint, ...checkpoints].slice(0, 4);
     try {localStorage.setItem(checkpointKey, JSON.stringify(checkpoints)); message("Checkpoint saved. Restore it from Evidence; the four most recent are retained.");}
     catch {message("Checkpoint is in memory only: browser storage is full or unavailable. Export the checkpoint from Evidence.", true);}
@@ -241,7 +281,8 @@
     const heading = node("div", "twin-checkpoint-heading"); heading.append(node("h3", "", "Restore a known state"), node("span", "twin-note", "Four browser-local checkpoints · validated by replay"));
     const cards = node("div", "twin-checkpoint-grid");
     for (const checkpoint of checkpoints) {
-      const card = node("article", "twin-checkpoint-card"); card.append(node("b", "", checkpoint.name), node("small", "", `${checkpoint.run.commands.length} commands · ${checkpoint.run.finalState.jobs.length} change${checkpoint.run.finalState.jobs.length === 1 ? "" : "s"}`),
+      const savedState=checkpoint.run.finalSummary || checkpoint.run.finalState;
+      const card = node("article", "twin-checkpoint-card"); card.append(node("b", "", checkpoint.name), node("small", "", `${checkpoint.run.commands.length} commands · ${savedState.jobs.length} change${savedState.jobs.length === 1 ? "" : "s"}`),
         button("Restore checkpoint", () => {
           pause(); detail("Restore checkpoint", [node("p", "", `Replace the current run with ${checkpoint.name}? Export or save the current run first to keep it.`),
             button("Restore this checkpoint", () => {
@@ -268,7 +309,7 @@
   }
   function equipment() {
     const target = state.sites[selected()];
-    const stages = [["ANTENNA / RET", "Gain · pointing · tilt"], ["RADIO UNIT", target.radioUp ? "Modeled cell enabled" : "Modeled cell stopped"], ["DU / CU", "External RAN functions"], ["BACKHAUL", `${target.selected || "no route"} · VLAN ${target.serviceVlan}`], ["5G CORE / UPF", state.services.mobileCore ? "Modeled core available" : "Modeled core stopped"]];
+    const stages = [["ANTENNA / RET", `VSWR ${target.metrics?.vswr ?? "—"} · physical model`], ["RADIO UNIT", target.metrics?.radioHealthy ? `Healthy · timing ${target.metrics.timingOffsetUs} µs` : "Modeled radio degraded"], ["DU / CU", "External RAN functions"], ["BACKHAUL", `${target.selected || "no route"} · VLAN ${target.serviceVlan}`], ["5G CORE / UPF", state.services.mobileCore ? "Modeled core available" : "Modeled core stopped"]];
     $t("#twin-equipment-map").replaceChildren(...stages.map(([name, detail]) => {const card = node("article", "twin-equipment-stage"); card.append(node("span", "eyebrow", name), node("b", "", detail)); return card;}));
     $t("#twin-equipment-list").replaceChildren(table(["Equipment", "Site role", "Implemented control / boundary"], D.equipment.map((item) => [item.name, item.role, item.control])));
     const p = plans[selected()] || D.rfDefaults;
@@ -321,10 +362,25 @@
   }
   function render() {
     const focus = document.activeElement?.id;
-    stats(); topology(); trends(); equipment(); scenarioTimeline(); pipeline(); changes(); mobile(); evidence(); renderCheckpoints();
+    stats(); topology(); trends(); investigation(); equipment(); scenarioTimeline(); pipeline(); changes(); mobile(); evidence(); renderCheckpoints();
     if (focus && document.getElementById(focus) && document.activeElement === document.body) document.getElementById(focus).focus();
   }
   function bind() {
+    for (const [id,action] of Object.entries(M.actions)) if (!Array.from($t("#twin-action").options).some(o=>o.value===id)) {const option=node("option","",action.label);option.value=id;$t("#twin-action").append(option);}
+    $t("#twin-campaign").addEventListener("click",()=>stageAction("coordinated_recovery","Coordinate active cases using observed diagnostics, review all site patches and verify the full fleet"));
+    $t("#twin-case-diagnostics").addEventListener("click",()=>{
+      pause();const active=state.cases.filter(c=>c.state!=="solved");if(!active.length){message("Inject a case before collecting its diagnostics.",true);return;}
+      for(const c of active)for(const probe of M.cases[c.caseId].probes)if(!run({type:"RUN_PROBE",site:c.site,probe},"Case diagnostics recorded. Inspect each result in Fleet monitor before review."))return;
+    });
+    $t("#twin-example").addEventListener("click",()=>{
+      pause();detail("Replay the solved campaign",[node("p","","This public example injects six failures across six regions, collects seven diagnostic probes and independently reviews a coordinated recovery. Its 19 commands rebuild the evidence and end with 24 healthy sites. Export or checkpoint your current run before replacing it."),button("Replace run with verified example",async()=>{
+        try{const response=await fetch("/assets/twin-solved-example.json");if(!response.ok)throw new Error("Solved example unavailable");const journal=await response.json();if(M.canonical(journal.siteDesigns)!==M.canonical(catalog.sites))throw new Error("Example site designs differ");const restored=M.replay(journal);state=restored;forecast=null;render();save();switchTab("scenarios");message("Solved campaign replay verified: six investigations, seven probes and 24 healthy sites. Inspect the resolution register and change evidence.");$t("#detail-dialog").close();}catch(error){message(`Example rejected: ${error.message}`,true);}
+      })],"REPRODUCIBLE ENGINEERING EXAMPLE");
+    });
+    $t("#twin-action").addEventListener("change",()=>{forecast=null;changes();});
+    for(const id of ["access","region","core"])$t(`#twin-plan-${id}`).addEventListener("input",()=>{forecast=null;renderForecast();});
+    $t("#twin-fleet-filter").addEventListener("change",topology);
+    $t("#twin-case-export").addEventListener("click",()=>downloadJSON("strata-engineering-dossier.json",{format:"strata-engineering-dossier",version:M.VERSION,tick:state.tick,siteDesigns:catalog.sites,cases:state.cases,probes:state.probes,changes:state.jobs,resources:{regions:state.regions,core:state.core},commands:state.commands,boundary:"Deterministic model evidence. Physical work orders and advanced capacity/timing intent are not vendor commands or measured field outcomes. Export run separately for full replay."}));
     for (const target of Object.values(state.sites)) {const option = node("option", "", `${target.id} · ${target.name}`); option.value = target.id; $t("#twin-site").append(option);}
     for (const el of document.querySelectorAll("[data-twin-tab]")) el.addEventListener("click", () => switchTab(el.dataset.twinTab));
     for (const target of Object.values(state.sites)) {const option = node("option", "", target.id); option.value = target.id; $t("#twin-handover-target").append(option);}
@@ -336,8 +392,18 @@
     document.addEventListener("visibilitychange", () => {if (document.hidden && timer) pause("Playback paused because the page is hidden.");});
     document.addEventListener("strata:viewchange", (event) => {if (event.detail.view !== "twin" && timer) pause("Playback paused when leaving the lab.");});
     $t("#twin-preview").addEventListener("click", () => {
-      pause(); try {forecast = M.forecast(state, {site: selected(), action: $t("#twin-action").value}); renderForecast(); message("What-if calculated. Current clock, configuration and approvals are unchanged.");}
+      pause(); try {forecast = M.forecast(state, {site: selected(), action: $t("#twin-action").value, ...capacityRequest()}); renderForecast(); message("What-if calculated. Current clock, configuration and approvals are unchanged.");}
       catch (error) {forecast = null; renderForecast(); message(error.message, true);}
+    });
+    $t("#twin-campaign").addEventListener("click",()=>stageAction("coordinated_recovery","Coordinate active cases using observed diagnostics, review all site patches and verify the full fleet"));
+    $t("#twin-case-diagnostics").addEventListener("click",()=>{
+      pause();const active=state.cases.filter(c=>c.state!=="solved");if(!active.length){message("Inject a case before collecting its diagnostics.",true);return;}
+      for(const c of active)for(const probe of M.cases[c.caseId].probes)if(!run({type:"RUN_PROBE",site:c.site,probe},"Case diagnostics recorded. Inspect each result in Fleet monitor before review."))return;
+    });
+    $t("#twin-example").addEventListener("click",()=>{
+      pause();detail("Replay the solved campaign",[node("p","","This public example injects six failures across six regions, collects seven diagnostic probes and independently reviews a coordinated recovery. Its 19 commands rebuild the evidence and end with 24 healthy sites. Export or checkpoint your current run before replacing it."),button("Replace run with verified example",async()=>{
+        try{const response=await fetch("/assets/twin-solved-example.json");if(!response.ok)throw new Error("Solved example unavailable");const journal=await response.json();if(M.canonical(journal.siteDesigns)!==M.canonical(catalog.sites))throw new Error("Example site designs differ");const restored=M.replay(journal);state=restored;forecast=null;render();save();switchTab("scenarios");message("Solved campaign replay verified: six investigations, seven probes and 24 healthy sites. Inspect the resolution register and change evidence.");$t("#detail-dialog").close();}catch(error){message(`Example rejected: ${error.message}`,true);}
+      })],"REPRODUCIBLE ENGINEERING EXAMPLE");
     });
     $t("#twin-action").addEventListener("change", () => {forecast = null; renderForecast();});
     $t("#twin-schedule").addEventListener("click", () => {
@@ -365,10 +431,10 @@
       for (const [fault, value] of [["primary_down", false], ["backup_down", false], ["primary_delay", 0], ["primary_loss", 0], ["demand", 100], ["radio_down", false]])
         if (!run({type: "FAULT", site: selected(), fault, value})) break;
     });
-    $t("#twin-propose").addEventListener("click", () => run({type: "PROPOSE", site: selected(), action: $t("#twin-action").value, reason: $t("#twin-reason").value}, "Candidate created. Switch to Reviewer and inspect the change to approve it."));
+    $t("#twin-propose").addEventListener("click", () => run({type: "PROPOSE", site: selected(), action: $t("#twin-action").value, ...capacityRequest(), reason: $t("#twin-reason").value}, "Candidate created. Switch to Reviewer and inspect the change to approve it."));
     $t("#twin-lease").addEventListener("click", () => run({type: "LEASE", site: selected(), client: $t("#twin-client").value}));
     $t("#twin-register").addEventListener("click", () => run({type: "REGISTER_UE", site: selected(), subscriber: $t("#twin-subscriber").value, slice: $t("#twin-slice").value}, "Registration requested. Advance two ticks to attempt a modeled PDU session."));
-    $t("#twin-export").addEventListener("click", () => downloadJSON("strata-twin-run.json", M.exportRun(state, catalog)));
+    $t("#twin-export").addEventListener("click", () => downloadJSON("strata-twin-journal.json", M.exportJournal(state, catalog)));
     $t("#twin-native").addEventListener("click", () => {
       downloadText(`${selected().toLowerCase()}-candidate.conf`, M.nativeFrr(state, selected()));
       message("FRR candidate exported for the isolated lab. The model's capacity and physical fault settings are not included in FRR syntax.");
@@ -386,7 +452,7 @@
         pause(); const imported = JSON.parse(await file.text()); const restored = M.migrate(imported);
         // Import only this repository's declared site designs; custom designs belong in a separate model version.
         if (M.canonical(imported.siteDesigns) !== M.canonical(catalog.sites)) throw new Error("Site designs do not match this model deployment");
-        state = restored; forecast = null; render(); save(); message(imported.version !== M.VERSION ? "Original v1 replay verified, then reinterpreted under v2 rules. Export to preserve this v2 run." : `Replay verified: ${state.commands.length} commands reproduce the exported state at T+${state.tick}.`);
+        state = restored; forecast = null; render(); save(); message(imported.version !== M.VERSION ? "Original replay verified and reinterpreted under current model rules. Export to preserve this run." : `Replay verified: ${state.commands.length} commands reproduce the exported state at T+${state.tick}.`);
       } catch (error) {message(`Replay rejected: ${error.message}`, true);} finally {event.target.value = "";}
     });
   }
@@ -397,7 +463,7 @@
       if (!response.ok) throw new Error("Simulation blueprint is unavailable"); catalog = await response.json();
       state = M.step(M.initial(catalog), {type: "ADVANCE", ticks: 1});
       let restored = false, failedRestore = false, migrated = false;
-      try {const stored = localStorage.getItem(key) || localStorage.getItem("strata:twin:1"); if (stored) {const run = JSON.parse(stored);
+      try {const stored = localStorage.getItem(key); if (stored) {const run = JSON.parse(stored);
         if (M.canonical(run.siteDesigns) !== M.canonical(catalog.sites)) throw new Error("Stored site designs differ");
         state = M.migrate(run); restored = true; migrated = run.version !== M.VERSION;}}
       catch {failedRestore = true;}
@@ -407,9 +473,9 @@
         });} catch {}
       initialized = true; bind(); bindEquipment(); rules(); render();
       message(failedRestore ? "Saved run could not be replayed. A fresh model is open; the saved file has been preserved until your next change."
-        : migrated ? "Original v1 run verified, then reinterpreted with v2 slice and handover rules. Your original browser save is retained."
+        : migrated ? "Older run verified and reinterpreted with current model rules. Original browser saves are retained."
         : restored ? "Browser-local run restored and replay verified. Press Play to run this visible lab."
-        : "Load a scenario or inject a fault. Preview changes before creating a reviewed candidate. Save checkpoints to compare experiments.", failedRestore);
+        : "24-site fleet ready. Save a checkpoint, then open Engineering cases. Previous v1/v2 browser saves are retained separately.", failedRestore);
     } catch (error) {message(`Simulator unavailable: ${error.message}. Refresh after checking static deployment assets.`, true);}
     finally {
       $t("#view-twin").inert = false;

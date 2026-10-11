@@ -1,0 +1,27 @@
+# Lab-only fragment. Map actual interfaces and install connected site/loopback/transit routes first. Review existing policies, OS release and licenses. RouterOS exports filter definitions only. No QoS, RF, credentials or physical commissioning is applied.
+set routing-options autonomous-system 65104
+set routing-options router-id 10.80.4.1
+set policy-options policy-statement STRATA-PRIMARY term allowed from route-filter 10.90.0.0/24 exact
+set policy-options policy-statement STRATA-PRIMARY term allowed then local-preference 100
+set policy-options policy-statement STRATA-PRIMARY term allowed then accept
+set policy-options policy-statement STRATA-PRIMARY term remainder then reject
+set policy-options policy-statement STRATA-BACKUP term allowed from route-filter 10.90.0.0/24 exact
+set policy-options policy-statement STRATA-BACKUP term allowed then local-preference 80
+set policy-options policy-statement STRATA-BACKUP term allowed then accept
+set policy-options policy-statement STRATA-BACKUP term remainder then reject
+set policy-options policy-statement STRATA-EXPORT term allowed from route-filter 10.81.4.0/24 exact
+set policy-options policy-statement STRATA-EXPORT term allowed from route-filter 10.80.4.1/32 exact
+set policy-options policy-statement STRATA-EXPORT term allowed then accept
+set policy-options policy-statement STRATA-EXPORT term remainder then reject
+set protocols bgp group STRATA-PRIMARY type external
+set protocols bgp group STRATA-PRIMARY family inet unicast
+set protocols bgp group STRATA-PRIMARY peer-as 65100
+set protocols bgp group STRATA-PRIMARY neighbor 10.250.0.1
+set protocols bgp group STRATA-PRIMARY import STRATA-PRIMARY
+set protocols bgp group STRATA-PRIMARY export STRATA-EXPORT
+set protocols bgp group STRATA-BACKUP type external
+set protocols bgp group STRATA-BACKUP family inet unicast
+set protocols bgp group STRATA-BACKUP peer-as 65200
+set protocols bgp group STRATA-BACKUP neighbor 10.251.0.1
+set protocols bgp group STRATA-BACKUP import STRATA-BACKUP
+set protocols bgp group STRATA-BACKUP export STRATA-EXPORT

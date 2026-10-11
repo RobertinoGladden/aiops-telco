@@ -8,7 +8,7 @@ const D = require("../console/assets/device-config.js");
 const root = path.resolve(__dirname, "..");
 const blueprint = JSON.parse(fs.readFileSync(path.join(root,"console/assets/twin-blueprint.json"),"utf8"));
 
-test("seven platform fragments preserve private routing intent across three sites and two candidate preferences", () => {
+test("seven platform fragments preserve private routing intent across the entire fleet and two candidate preferences", () => {
   const state = M.initial(blueprint), original = M.canonical(state);
   const preferences = {running:80,prefer_backup:200,restore_primary:80};
   for (const site of Object.values(state.sites)) for (const platform of Object.keys(D.profiles)) for (const [action, preference] of Object.entries(preferences)) {
@@ -57,7 +57,7 @@ test("commissioning rejects nonfinite, unsupported and out-of-range values", () 
 });
 test("public native pack hashes match only explicit config sources, without environment or runtime files", () => {
   const pack = JSON.parse(fs.readFileSync(path.join(root,"console/assets/native-lab-pack.json"),"utf8"));
-  assert.equal(pack.liveValidated,false); assert.equal(pack.files.length,36);
+  assert.equal(pack.liveValidated,false); assert.equal(pack.files.length,15+blueprint.sites.length*Object.keys(D.profiles).length);
   const seen = new Set();
   for (const file of pack.files) {
     assert.ok(file.path.startsWith("lab/config/"));
@@ -67,5 +67,5 @@ test("public native pack hashes match only explicit config sources, without envi
   }
   for (const name of ["amf.yaml","smf.yaml","upf.yaml","gnb.yml","ue.yml"])
     assert.ok(seen.has(`lab/config/mobile/${name}`));
-  assert.equal(pack.files.filter(file=>file.path.includes("/vendors/") && !file.path.endsWith("manifest.json")).length,21);
+  assert.equal(pack.files.filter(file=>file.path.includes("/vendors/") && !file.path.endsWith("manifest.json")).length,blueprint.sites.length*Object.keys(D.profiles).length);
 });

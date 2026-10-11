@@ -2,7 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const M = require("../console/assets/twin-model.js");
-const catalog = JSON.parse(fs.readFileSync(`${__dirname}/../console/assets/twin-blueprint.json`, "utf8"));
+const catalog = JSON.parse(fs.readFileSync(`${__dirname}/../lab/reference/twin-blueprint-v2.json`, "utf8"));
 const coverage = JSON.parse(fs.readFileSync(`${__dirname}/../lab/reference/twin-coverage.json`, "utf8"));
 const target = "JKT-001";
 const start = () => M.step(M.initial(catalog), {type: "ADVANCE", ticks: 1});

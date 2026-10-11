@@ -1,6 +1,18 @@
 # Validation evidence — 11 October 2026
 
-## Strata Twin and native lab definitions
+## Current v3 fleet upgrade
+
+**49 model/config Node tests and two native mobile YAML contract tests passed.** The Node suite covers the preserved 28 transport/mobile/event contracts, 15 engineering cases/journal/campaign contracts, and six device/config checks. The campaign test was corrected to reference the newly generated proposal ID after intentionally omitting a probe; the corrected failure-gate test passed. The unmodified backend/provider/proxy suite was not rerun in this upgrade.
+
+The deterministic public campaign injects six concurrent cases at six regional origins, records seven probes, reviews a nine-site patch bundle with regional/core capacity changes, and verifies all 24 sites. Its 19 commands reproduce six solved cases at T+12, 289 stored model objects and zero consumer lag. The CLI replay and actual browser replay/reload both verified. Naive MTU failover, timing-only recovery and a partial capacity plan are separately tested to fail verification and roll back; completed field work remains recorded. Current-context and expired diagnostic evidence are rejected.
+
+Desktop DOM measurements confirmed equal paired panel heights: network 542.64 px at 1440 px width (548.73 px at 1920 px), equipment 1039.08 px, and six engineering cards 269.17 px. At 375 px, Fleet, Equipment and Cases each had matching 360 px client/scroll widths. The mobile layer menu uses a three-column grid; the review modal fits the viewport and keyboard Escape closes it. Browser logs showed no observed errors. See [fleet monitoring](assets/strata-fleet-v3.jpg), [case investigations](assets/strata-cases-v3.jpg), and [aligned equipment panels](assets/strata-equipment-v3.jpg).
+
+Compact command journals replace repeated full telemetry copies in browser storage/checkpoints. The public pack now contains 183 explicitly selected files: 168 routing fragments for seven profiles across 24 sites, plus 15 native reference/manifest files. File contents and SHA-256 hashes passed integrity checks. The optional native Docker topology remains three sites; additional exported fragments require native provisioning/interface mapping. No native daemon or physical/vendor device was executed.
+
+Repository and standalone Vercel builds succeeded with the v3 engine, frozen v1/v2 validators, engineering module, 24-site blueprint and reproducible solved example. No Git push or online deployment was performed. Workspace environment files/values were not opened. Earlier validation below is historical evidence, not a new execution of the real backend.
+
+## Earlier three-site Twin and native lab validation
 
 **41/41 Node tests passed: 28 Twin model tests, 6 device/config tests and 7 Vercel proxy tests.** Coverage includes private allocations, shared capacity, delayed convergence, independent review, stale/expired approvals, verification/rollback, outbox retry, consumer offsets/DLQ/deduplication, DHCP, subscriber admission, weighted slices, handover interruption/fallback, fault schedules, detached what-if branches, checkpoints, legacy migration and strict replay. Configuration tests verify seven bounded routing profiles, unsafe-input rejection, commissioning arithmetic and the SHA-256 integrity of 36 explicitly selected public config files. All 50 catalog references retain explicit boundaries (25 selected modeled contracts, 23 reference-only and 2 external providers) in internal lab references.
 
