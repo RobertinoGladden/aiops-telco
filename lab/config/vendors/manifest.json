@@ -1,0 +1,443 @@
+[
+  {
+    "path": "lab/config/vendors/frr/jkt-001-frr.conf",
+    "platform": "frr",
+    "site": "JKT-001",
+    "os": "Debian Bookworm FRR · record installed version",
+    "intent": {
+      "asn": 65101,
+      "routerId": "10.80.1.1",
+      "importExact": [
+        "10.90.0.0/24"
+      ],
+      "exportExact": [
+        "10.81.1.0/24",
+        "10.80.1.1/32"
+      ],
+      "primaryPreference": 100,
+      "backupPreference": 80
+    },
+    "source": "https://docs.frrouting.org/en/stable-8.4/routemap.html",
+    "validation": "Generated from bounded intent. Native parser and device execution have not been tested."
+  },
+  {
+    "path": "lab/config/vendors/frr/bdg-001-frr.conf",
+    "platform": "frr",
+    "site": "BDG-001",
+    "os": "Debian Bookworm FRR · record installed version",
+    "intent": {
+      "asn": 65102,
+      "routerId": "10.80.2.1",
+      "importExact": [
+        "10.90.0.0/24"
+      ],
+      "exportExact": [
+        "10.81.2.0/24",
+        "10.80.2.1/32"
+      ],
+      "primaryPreference": 100,
+      "backupPreference": 80
+    },
+    "source": "https://docs.frrouting.org/en/stable-8.4/routemap.html",
+    "validation": "Generated from bounded intent. Native parser and device execution have not been tested."
+  },
+  {
+    "path": "lab/config/vendors/frr/sby-001-frr.conf",
+    "platform": "frr",
+    "site": "SBY-001",
+    "os": "Debian Bookworm FRR · record installed version",
+    "intent": {
+      "asn": 65103,
+      "routerId": "10.80.3.1",
+      "importExact": [
+        "10.90.0.0/24"
+      ],
+      "exportExact": [
+        "10.81.3.0/24",
+        "10.80.3.1/32"
+      ],
+      "primaryPreference": 100,
+      "backupPreference": 80
+    },
+    "source": "https://docs.frrouting.org/en/stable-8.4/routemap.html",
+    "validation": "Generated from bounded intent. Native parser and device execution have not been tested."
+  },
+  {
+    "path": "lab/config/vendors/iosxe/jkt-001-iosxe.cfg",
+    "platform": "iosxe",
+    "site": "JKT-001",
+    "os": "IOS XE 17.x · policy fragment",
+    "intent": {
+      "asn": 65101,
+      "routerId": "10.80.1.1",
+      "importExact": [
+        "10.90.0.0/24"
+      ],
+      "exportExact": [
+        "10.81.1.0/24",
+        "10.80.1.1/32"
+      ],
+      "primaryPreference": 100,
+      "backupPreference": 80
+    },
+    "source": "https://www.cisco.com/c/en/us/td/docs/routers/ios/config/17-x/ip-routing/b-ip-routing/m_irg-external-sp-0.html",
+    "validation": "Generated from bounded intent. Native parser and device execution have not been tested."
+  },
+  {
+    "path": "lab/config/vendors/iosxe/bdg-001-iosxe.cfg",
+    "platform": "iosxe",
+    "site": "BDG-001",
+    "os": "IOS XE 17.x · policy fragment",
+    "intent": {
+      "asn": 65102,
+      "routerId": "10.80.2.1",
+      "importExact": [
+        "10.90.0.0/24"
+      ],
+      "exportExact": [
+        "10.81.2.0/24",
+        "10.80.2.1/32"
+      ],
+      "primaryPreference": 100,
+      "backupPreference": 80
+    },
+    "source": "https://www.cisco.com/c/en/us/td/docs/routers/ios/config/17-x/ip-routing/b-ip-routing/m_irg-external-sp-0.html",
+    "validation": "Generated from bounded intent. Native parser and device execution have not been tested."
+  },
+  {
+    "path": "lab/config/vendors/iosxe/sby-001-iosxe.cfg",
+    "platform": "iosxe",
+    "site": "SBY-001",
+    "os": "IOS XE 17.x · policy fragment",
+    "intent": {
+      "asn": 65103,
+      "routerId": "10.80.3.1",
+      "importExact": [
+        "10.90.0.0/24"
+      ],
+      "exportExact": [
+        "10.81.3.0/24",
+        "10.80.3.1/32"
+      ],
+      "primaryPreference": 100,
+      "backupPreference": 80
+    },
+    "source": "https://www.cisco.com/c/en/us/td/docs/routers/ios/config/17-x/ip-routing/b-ip-routing/m_irg-external-sp-0.html",
+    "validation": "Generated from bounded intent. Native parser and device execution have not been tested."
+  },
+  {
+    "path": "lab/config/vendors/iosxr/jkt-001-iosxr.cfg",
+    "platform": "iosxr",
+    "site": "JKT-001",
+    "os": "IOS XR 7.x · RPL fragment",
+    "intent": {
+      "asn": 65101,
+      "routerId": "10.80.1.1",
+      "importExact": [
+        "10.90.0.0/24"
+      ],
+      "exportExact": [
+        "10.81.1.0/24",
+        "10.80.1.1/32"
+      ],
+      "primaryPreference": 100,
+      "backupPreference": 80
+    },
+    "source": "https://www.cisco.com/c/en/us/td/docs/iosxr/ncs5000/routing/72x/b-routing-cg-ncs5000-72x/implementing-routing-policy.html",
+    "validation": "Generated from bounded intent. Native parser and device execution have not been tested."
+  },
+  {
+    "path": "lab/config/vendors/iosxr/bdg-001-iosxr.cfg",
+    "platform": "iosxr",
+    "site": "BDG-001",
+    "os": "IOS XR 7.x · RPL fragment",
+    "intent": {
+      "asn": 65102,
+      "routerId": "10.80.2.1",
+      "importExact": [
+        "10.90.0.0/24"
+      ],
+      "exportExact": [
+        "10.81.2.0/24",
+        "10.80.2.1/32"
+      ],
+      "primaryPreference": 100,
+      "backupPreference": 80
+    },
+    "source": "https://www.cisco.com/c/en/us/td/docs/iosxr/ncs5000/routing/72x/b-routing-cg-ncs5000-72x/implementing-routing-policy.html",
+    "validation": "Generated from bounded intent. Native parser and device execution have not been tested."
+  },
+  {
+    "path": "lab/config/vendors/iosxr/sby-001-iosxr.cfg",
+    "platform": "iosxr",
+    "site": "SBY-001",
+    "os": "IOS XR 7.x · RPL fragment",
+    "intent": {
+      "asn": 65103,
+      "routerId": "10.80.3.1",
+      "importExact": [
+        "10.90.0.0/24"
+      ],
+      "exportExact": [
+        "10.81.3.0/24",
+        "10.80.3.1/32"
+      ],
+      "primaryPreference": 100,
+      "backupPreference": 80
+    },
+    "source": "https://www.cisco.com/c/en/us/td/docs/iosxr/ncs5000/routing/72x/b-routing-cg-ncs5000-72x/implementing-routing-policy.html",
+    "validation": "Generated from bounded intent. Native parser and device execution have not been tested."
+  },
+  {
+    "path": "lab/config/vendors/junos/jkt-001-junos.set",
+    "platform": "junos",
+    "site": "JKT-001",
+    "os": "Junos OS · set-style policy fragment",
+    "intent": {
+      "asn": 65101,
+      "routerId": "10.80.1.1",
+      "importExact": [
+        "10.90.0.0/24"
+      ],
+      "exportExact": [
+        "10.81.1.0/24",
+        "10.80.1.1/32"
+      ],
+      "primaryPreference": 100,
+      "backupPreference": 80
+    },
+    "source": "https://www.juniper.net/documentation/us/en/software/junos/bgp/topics/topic-map/basic-routing-policies.html",
+    "validation": "Generated from bounded intent. Native parser and device execution have not been tested."
+  },
+  {
+    "path": "lab/config/vendors/junos/bdg-001-junos.set",
+    "platform": "junos",
+    "site": "BDG-001",
+    "os": "Junos OS · set-style policy fragment",
+    "intent": {
+      "asn": 65102,
+      "routerId": "10.80.2.1",
+      "importExact": [
+        "10.90.0.0/24"
+      ],
+      "exportExact": [
+        "10.81.2.0/24",
+        "10.80.2.1/32"
+      ],
+      "primaryPreference": 100,
+      "backupPreference": 80
+    },
+    "source": "https://www.juniper.net/documentation/us/en/software/junos/bgp/topics/topic-map/basic-routing-policies.html",
+    "validation": "Generated from bounded intent. Native parser and device execution have not been tested."
+  },
+  {
+    "path": "lab/config/vendors/junos/sby-001-junos.set",
+    "platform": "junos",
+    "site": "SBY-001",
+    "os": "Junos OS · set-style policy fragment",
+    "intent": {
+      "asn": 65103,
+      "routerId": "10.80.3.1",
+      "importExact": [
+        "10.90.0.0/24"
+      ],
+      "exportExact": [
+        "10.81.3.0/24",
+        "10.80.3.1/32"
+      ],
+      "primaryPreference": 100,
+      "backupPreference": 80
+    },
+    "source": "https://www.juniper.net/documentation/us/en/software/junos/bgp/topics/topic-map/basic-routing-policies.html",
+    "validation": "Generated from bounded intent. Native parser and device execution have not been tested."
+  },
+  {
+    "path": "lab/config/vendors/routeros/jkt-001-routeros.rsc",
+    "platform": "routeros",
+    "site": "JKT-001",
+    "os": "RouterOS 7 · routing filter fragment",
+    "intent": {
+      "asn": 65101,
+      "routerId": "10.80.1.1",
+      "importExact": [
+        "10.90.0.0/24"
+      ],
+      "exportExact": [
+        "10.81.1.0/24",
+        "10.80.1.1/32"
+      ],
+      "primaryPreference": 100,
+      "backupPreference": 80
+    },
+    "source": "https://help.mikrotik.com/docs/spaces/ROS/pages/74678285/Route+Selection+and+Filters",
+    "validation": "Generated from bounded intent. Native parser and device execution have not been tested."
+  },
+  {
+    "path": "lab/config/vendors/routeros/bdg-001-routeros.rsc",
+    "platform": "routeros",
+    "site": "BDG-001",
+    "os": "RouterOS 7 · routing filter fragment",
+    "intent": {
+      "asn": 65102,
+      "routerId": "10.80.2.1",
+      "importExact": [
+        "10.90.0.0/24"
+      ],
+      "exportExact": [
+        "10.81.2.0/24",
+        "10.80.2.1/32"
+      ],
+      "primaryPreference": 100,
+      "backupPreference": 80
+    },
+    "source": "https://help.mikrotik.com/docs/spaces/ROS/pages/74678285/Route+Selection+and+Filters",
+    "validation": "Generated from bounded intent. Native parser and device execution have not been tested."
+  },
+  {
+    "path": "lab/config/vendors/routeros/sby-001-routeros.rsc",
+    "platform": "routeros",
+    "site": "SBY-001",
+    "os": "RouterOS 7 · routing filter fragment",
+    "intent": {
+      "asn": 65103,
+      "routerId": "10.80.3.1",
+      "importExact": [
+        "10.90.0.0/24"
+      ],
+      "exportExact": [
+        "10.81.3.0/24",
+        "10.80.3.1/32"
+      ],
+      "primaryPreference": 100,
+      "backupPreference": 80
+    },
+    "source": "https://help.mikrotik.com/docs/spaces/ROS/pages/74678285/Route+Selection+and+Filters",
+    "validation": "Generated from bounded intent. Native parser and device execution have not been tested."
+  },
+  {
+    "path": "lab/config/vendors/vrp/jkt-001-vrp.cfg",
+    "platform": "vrp",
+    "site": "JKT-001",
+    "os": "VRP · route-policy fragment",
+    "intent": {
+      "asn": 65101,
+      "routerId": "10.80.1.1",
+      "importExact": [
+        "10.90.0.0/24"
+      ],
+      "exportExact": [
+        "10.81.1.0/24",
+        "10.80.1.1/32"
+      ],
+      "primaryPreference": 100,
+      "backupPreference": 80
+    },
+    "source": "https://info.support.huawei.com/hedex/api/pages/EDOC1100277650/AZM1016J/04/resources/command/yunshan/APPLY-LOCAL-PREF%28RTPOM%29.html",
+    "validation": "Generated from bounded intent. Native parser and device execution have not been tested."
+  },
+  {
+    "path": "lab/config/vendors/vrp/bdg-001-vrp.cfg",
+    "platform": "vrp",
+    "site": "BDG-001",
+    "os": "VRP · route-policy fragment",
+    "intent": {
+      "asn": 65102,
+      "routerId": "10.80.2.1",
+      "importExact": [
+        "10.90.0.0/24"
+      ],
+      "exportExact": [
+        "10.81.2.0/24",
+        "10.80.2.1/32"
+      ],
+      "primaryPreference": 100,
+      "backupPreference": 80
+    },
+    "source": "https://info.support.huawei.com/hedex/api/pages/EDOC1100277650/AZM1016J/04/resources/command/yunshan/APPLY-LOCAL-PREF%28RTPOM%29.html",
+    "validation": "Generated from bounded intent. Native parser and device execution have not been tested."
+  },
+  {
+    "path": "lab/config/vendors/vrp/sby-001-vrp.cfg",
+    "platform": "vrp",
+    "site": "SBY-001",
+    "os": "VRP · route-policy fragment",
+    "intent": {
+      "asn": 65103,
+      "routerId": "10.80.3.1",
+      "importExact": [
+        "10.90.0.0/24"
+      ],
+      "exportExact": [
+        "10.81.3.0/24",
+        "10.80.3.1/32"
+      ],
+      "primaryPreference": 100,
+      "backupPreference": 80
+    },
+    "source": "https://info.support.huawei.com/hedex/api/pages/EDOC1100277650/AZM1016J/04/resources/command/yunshan/APPLY-LOCAL-PREF%28RTPOM%29.html",
+    "validation": "Generated from bounded intent. Native parser and device execution have not been tested."
+  },
+  {
+    "path": "lab/config/vendors/sros/jkt-001-sros.cfg",
+    "platform": "sros",
+    "site": "JKT-001",
+    "os": "SR OS Classic CLI · policy fragment",
+    "intent": {
+      "asn": 65101,
+      "routerId": "10.80.1.1",
+      "importExact": [
+        "10.90.0.0/24"
+      ],
+      "exportExact": [
+        "10.81.1.0/24",
+        "10.80.1.1/32"
+      ],
+      "primaryPreference": 100,
+      "backupPreference": 80
+    },
+    "source": "https://documentation.nokia.com/sr/22-10-4/books/unicast-routing-protocols/route-policies.html",
+    "validation": "Generated from bounded intent. Native parser and device execution have not been tested."
+  },
+  {
+    "path": "lab/config/vendors/sros/bdg-001-sros.cfg",
+    "platform": "sros",
+    "site": "BDG-001",
+    "os": "SR OS Classic CLI · policy fragment",
+    "intent": {
+      "asn": 65102,
+      "routerId": "10.80.2.1",
+      "importExact": [
+        "10.90.0.0/24"
+      ],
+      "exportExact": [
+        "10.81.2.0/24",
+        "10.80.2.1/32"
+      ],
+      "primaryPreference": 100,
+      "backupPreference": 80
+    },
+    "source": "https://documentation.nokia.com/sr/22-10-4/books/unicast-routing-protocols/route-policies.html",
+    "validation": "Generated from bounded intent. Native parser and device execution have not been tested."
+  },
+  {
+    "path": "lab/config/vendors/sros/sby-001-sros.cfg",
+    "platform": "sros",
+    "site": "SBY-001",
+    "os": "SR OS Classic CLI · policy fragment",
+    "intent": {
+      "asn": 65103,
+      "routerId": "10.80.3.1",
+      "importExact": [
+        "10.90.0.0/24"
+      ],
+      "exportExact": [
+        "10.81.3.0/24",
+        "10.80.3.1/32"
+      ],
+      "primaryPreference": 100,
+      "backupPreference": 80
+    },
+    "source": "https://documentation.nokia.com/sr/22-10-4/books/unicast-routing-protocols/route-policies.html",
+    "validation": "Generated from bounded intent. Native parser and device execution have not been tested."
+  }
+]

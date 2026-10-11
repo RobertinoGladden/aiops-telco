@@ -12,3 +12,5 @@ __pycache__
 *.pyc
 demo.gif
 tests
+lab/.env
+lab/runtime

@@ -1,0 +1,25 @@
+# Native Open5GS v2.7.6 isolated lab; not a measured or live-validated deployment.
+# Public DNS addresses are upstream defaults; the internal Docker network has no Internet egress.
+logger:
+  file:
+    path: /lab/logs/upf.log
+  level: info
+global:
+  max:
+    ue: 1024
+upf:
+  pfcp:
+    server:
+    - address: 127.0.0.7
+  gtpu:
+    server:
+    - address: 172.28.80.50
+  session:
+  - subnet: 10.45.0.0/16
+    gateway: 10.45.0.1
+    dnn: internet
+    dev: ogstun
+  metrics:
+    server:
+    - address: 172.28.80.50
+      port: 9092

@@ -1,8 +1,19 @@
 # Push the existing workspace with git remote, without cloning
 
-This procedure applies to the current ZIP-downloaded project, which has no project-local `.git`, and to the existing GitHub repository's main branch. It preserves the existing remote history and current local application files.
+The current folder is now initialized and its first source update has been committed. Use add/commit/push for subsequent edits. The first-time procedure further below applies only to a fresh ZIP folder without a project-local `.git`; do not repeat its reset after creating local commits.
 
-No VPS or paid hosting account is needed to upload the source. Publishing it to GitHub does not run the application. The selected target retains Kafka, MinIO and actual field telemetry: see [the full-stack field deployment guide](FULL_STACK_FIELD_DEPLOYMENT.md) for the free cloud VM candidate and remaining validation. Vercel alone hosts the console/proxy, not the continuous backend. Vercel Hobby is limited to personal, non-commercial use.
+No VPS is needed for **Strata Twin**, the browser-local operational simulator on Vercel. Real Kafka/MinIO processing and device changes remain separate. See [the simulator guide](STRATA_TWIN.md). Vercel Hobby is limited to personal, non-commercial use.
+
+For these portfolio changes, review and upload the selected paths:
+
+```powershell
+git add README.md console deploy scripts tests docs lab Dockerfile docker-compose.yml .gitignore .dockerignore ansible/lab_impairment.yml
+git diff --cached --stat
+git commit -m "Add Strata Twin operational simulator and optional lab definitions"
+git push origin main
+```
+
+## First-time import only
 
 ```powershell
 cd C:\Users\lapt1\Downloads\aiops-telco-main
@@ -16,7 +27,7 @@ Stop if fetching the remote fails. `reset --mixed` prepares the index/history fr
 
 ```powershell
 git add .gitignore .dockerignore .env.example README.md Dockerfile docker-compose.yml requirements.txt requirements-dev.txt console.ps1 start.ps1 status.ps1 stop.ps1 train.ps1
-git add aiops api consumer predictor model integrations config console deploy scripts monitoring grafana airflow tests docs
+git add aiops api consumer predictor model integrations config console deploy scripts monitoring grafana airflow tests docs ansible/lab_impairment.yml
 git diff --cached --stat
 git commit -m "Update Strata console and GitHub deployment"
 git push -u origin main

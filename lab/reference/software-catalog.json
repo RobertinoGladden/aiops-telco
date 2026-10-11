@@ -1,0 +1,871 @@
+{
+  "version": 1,
+  "scope": "Internal native-lab integration reference. Not a public application page or live service-health assertion.",
+  "layers": [
+    {
+      "id": "inventory",
+      "name": "Inventory & IPAM",
+      "question": "What should exist at each site?"
+    },
+    {
+      "id": "transport",
+      "name": "Transport & routing",
+      "question": "Where does traffic travel?"
+    },
+    {
+      "id": "services",
+      "name": "Access services",
+      "question": "How do clients get addresses and access?"
+    },
+    {
+      "id": "automation",
+      "name": "Configuration automation",
+      "question": "Who validates and applies a change?"
+    },
+    {
+      "id": "observability",
+      "name": "NOC observability",
+      "question": "How is failure detected and explained?"
+    },
+    {
+      "id": "pipeline",
+      "name": "Events, storage & models",
+      "question": "How is evidence processed and retained?"
+    },
+    {
+      "id": "lab",
+      "name": "Virtual sites & diagnostics",
+      "question": "How is network behavior reproduced?"
+    },
+    {
+      "id": "mobile",
+      "name": "Mobile core & RAN",
+      "question": "How are UE sessions and radio functions represented?"
+    },
+    {
+      "id": "security",
+      "name": "Identity & secrets",
+      "question": "Who may access services and credentials?"
+    },
+    {
+      "id": "workflow",
+      "name": "Change workflow & tickets",
+      "question": "How is a change approved and tracked?"
+    },
+    {
+      "id": "platform",
+      "name": "Infrastructure & delivery",
+      "question": "How is the lab deployed consistently?"
+    },
+    {
+      "id": "intelligence",
+      "name": "Operations & AI",
+      "question": "How is evidence turned into a next step?"
+    }
+  ],
+  "statuses": {
+    "compose": "Compose defined",
+    "adapter": "Adapter implemented",
+    "artifact": "Lab artifact available",
+    "planned": "Planned lab component",
+    "optional": "Optional extension",
+    "implemented": "Implemented in Strata",
+    "provider": "Provider integration"
+  },
+  "tools": [
+    {
+      "id": "netbox",
+      "name": "NetBox",
+      "layer": "inventory",
+      "status": "adapter",
+      "role": "Source of truth for sites, devices, circuits, prefixes, IPs, VLANs, VRFs and ASNs.",
+      "interface": "REST API / planned IPAM writes",
+      "boundary": "Read adapter and native inventory-profile/ORM seed definitions exist. Actual NetBox startup/seeding and general allocation write automation are not live-validated.",
+      "source": "https://netboxlabs.com/docs/netbox/",
+      "evidence": "lab/automation/seed_netbox.py"
+    },
+    {
+      "id": "frr",
+      "name": "FRRouting",
+      "layer": "transport",
+      "status": "artifact",
+      "role": "Run actual BGP, OSPF and BFD control planes on virtual Linux routers.",
+      "interface": "vtysh / routing protocols",
+      "boundary": "Native five-router configurations and isolated Compose topology are defined. Docker execution and BGP/traffic validation are pending.",
+      "source": "https://frrouting.org/",
+      "evidence": "lab/config/frr/jkt.conf"
+    },
+    {
+      "id": "ovs",
+      "name": "Open vSwitch",
+      "layer": "transport",
+      "status": "optional",
+      "role": "Virtual switching, VLAN separation and OpenFlow-controlled forwarding.",
+      "interface": "OVSDB / OpenFlow",
+      "boundary": "An alternative forwarding extension; not required for every FRR lab.",
+      "source": "https://docs.openvswitch.org/en/latest/"
+    },
+    {
+      "id": "tc",
+      "name": "Linux tc / netem",
+      "layer": "transport",
+      "status": "artifact",
+      "role": "Traffic shaping, queue policies and reproducible delay/loss on lab interfaces.",
+      "interface": "Ansible command tasks / Linux qdisc",
+      "boundary": "Allowlisted owned netem delay/loss changes are defined for dedicated virtual routers. No container or actual qdisc has been executed on this laptop.",
+      "source": "https://git.kernel.org/pub/scm/network/iproute2/iproute2.git/tree/man/man8/tc.8",
+      "evidence": "lab/router/device.py"
+    },
+    {
+      "id": "opendaylight",
+      "name": "OpenDaylight",
+      "layer": "transport",
+      "status": "optional",
+      "role": "Explore controller-driven SDN and model-based device integration.",
+      "interface": "RESTCONF / NETCONF / OpenFlow modules",
+      "boundary": "Optional SDN track; protocol/module support must match the selected release and devices.",
+      "source": "https://docs.opendaylight.org/en/latest/"
+    },
+    {
+      "id": "kea",
+      "name": "ISC Kea",
+      "layer": "services",
+      "status": "planned",
+      "role": "DHCPv4/v6 leases, reservations and IPv6 prefix delegation for virtual clients.",
+      "interface": "DHCP / control API",
+      "boundary": "Consumes address policy; does not decide the whole site's routing design.",
+      "source": "https://kea.readthedocs.io/en/latest/arm/intro.html"
+    },
+    {
+      "id": "powerdns",
+      "name": "PowerDNS",
+      "layer": "services",
+      "status": "optional",
+      "role": "Authoritative DNS records for sites and customer service endpoints.",
+      "interface": "DNS / HTTP API",
+      "boundary": "Authoritative and recursive DNS are separate services; choose the required role.",
+      "source": "https://docs.powerdns.com/authoritative/"
+    },
+    {
+      "id": "freeradius",
+      "name": "FreeRADIUS",
+      "layer": "services",
+      "status": "optional",
+      "role": "Authentication, authorization and accounting for network access experiments.",
+      "interface": "RADIUS",
+      "boundary": "Access policy is separate from IPAM and radio scheduling.",
+      "source": "https://www.freeradius.org/"
+    },
+    {
+      "id": "ansible",
+      "name": "Ansible",
+      "layer": "automation",
+      "status": "artifact",
+      "role": "Execute repeatable device/Linux configuration and verification playbooks.",
+      "interface": "SSH / vendor network modules",
+      "boundary": "Native approved lab tasks and controller review/verification code exist. Live Ansible execution is pending; general vendor provisioning remains external.",
+      "source": "https://docs.ansible.com/projects/ansible/latest/network/getting_started/",
+      "evidence": "lab/automation/change.yml"
+    },
+    {
+      "id": "awx",
+      "name": "AWX",
+      "layer": "automation",
+      "status": "planned",
+      "role": "Run Ansible jobs with inventory, credentials, workflow approvals and job history.",
+      "interface": "Job/workflow templates / REST API",
+      "boundary": "Strata currently sends generic review webhooks; an AWX receiver/launcher is still needed.",
+      "source": "https://docs.ansible.com/projects/awx/en/24.6.1/userguide/workflow_templates.html"
+    },
+    {
+      "id": "nornir",
+      "name": "Nornir",
+      "layer": "automation",
+      "status": "optional",
+      "role": "Python inventory and concurrent task dispatch for network automation.",
+      "interface": "Python task plugins",
+      "boundary": "Alternative automation implementation; not another approval engine.",
+      "source": "https://nornir.readthedocs.io/en/latest/"
+    },
+    {
+      "id": "napalm",
+      "name": "NAPALM",
+      "layer": "automation",
+      "status": "optional",
+      "role": "Unified getters and configuration operations for supported network OS drivers.",
+      "interface": "Python driver API",
+      "boundary": "Candidate/diff/commit/rollback capabilities differ by vendor driver; FRR support must be checked.",
+      "source": "https://napalm.readthedocs.io/en/latest/"
+    },
+    {
+      "id": "netmiko",
+      "name": "Netmiko",
+      "layer": "automation",
+      "status": "optional",
+      "role": "Interact with supported network-device CLIs over SSH.",
+      "interface": "Python SSH / device CLI",
+      "boundary": "CLI transport alone does not provide transaction safety or rollback.",
+      "source": "https://github.com/ktbyers/netmiko"
+    },
+    {
+      "id": "batfish",
+      "name": "Batfish",
+      "layer": "automation",
+      "status": "planned",
+      "role": "Analyze supported configuration snapshots for reachability and policy before changes.",
+      "interface": "Snapshot files / pybatfish",
+      "boundary": "Offline model analysis complements live probes; verify support for the selected configuration syntax.",
+      "source": "https://github.com/batfish/batfish"
+    },
+    {
+      "id": "oxidized",
+      "name": "Oxidized",
+      "layer": "automation",
+      "status": "planned",
+      "role": "Capture device configuration versions and detect configuration drift.",
+      "interface": "Device models / Git / REST API",
+      "boundary": "Backups help build a rollback plan; they do not prove rollback execution succeeded.",
+      "source": "https://github.com/ytti/oxidized"
+    },
+    {
+      "id": "zabbix",
+      "name": "Zabbix",
+      "layer": "observability",
+      "status": "adapter",
+      "role": "Poll device/service metrics and evaluate monitoring triggers.",
+      "interface": "SNMP/agent collection upstream / JSON-RPC API",
+      "boundary": "External installation required; Strata reads configured item keys and source timestamps.",
+      "source": "https://www.zabbix.com/documentation/current/en/manual"
+    },
+    {
+      "id": "librenms",
+      "name": "LibreNMS",
+      "layer": "observability",
+      "status": "adapter",
+      "role": "Network discovery, interface/sensor polling and network monitoring.",
+      "interface": "SNMP collection upstream / REST API",
+      "boundary": "Alternative or complementary NMS; avoid double counting shared interface measurements.",
+      "source": "https://docs.librenms.org/"
+    },
+    {
+      "id": "prometheus",
+      "name": "Prometheus",
+      "layer": "observability",
+      "status": "compose",
+      "role": "Scrape platform/exporter time series and evaluate alert rules.",
+      "interface": "HTTP scrape / PromQL",
+      "boundary": "Compose configuration exists; live scrapes require running services.",
+      "source": "https://prometheus.io/docs/introduction/overview/",
+      "evidence": "monitoring/prometheus.yml"
+    },
+    {
+      "id": "grafana",
+      "name": "Grafana",
+      "layer": "observability",
+      "status": "compose",
+      "role": "Visualize worker, connector, Kafka and operational metrics.",
+      "interface": "Prometheus data source / dashboards",
+      "boundary": "Dashboard provisioning exists; displayed values depend on actual measurements.",
+      "source": "https://grafana.com/docs/grafana/latest/",
+      "evidence": "grafana/aiops_dashboard.json"
+    },
+    {
+      "id": "alertmanager",
+      "name": "Alertmanager",
+      "layer": "observability",
+      "status": "compose",
+      "role": "Group and route Prometheus firing/resolved notifications to incident handling.",
+      "interface": "Webhook / alert routing",
+      "boundary": "Existing receiver records platform incidents; notification does not itself change a router.",
+      "source": "https://prometheus.io/docs/alerting/latest/alertmanager/",
+      "evidence": "monitoring/alertmanager.yml"
+    },
+    {
+      "id": "loki",
+      "name": "Grafana Loki",
+      "layer": "observability",
+      "status": "optional",
+      "role": "Centralize service logs for incident investigation.",
+      "interface": "Log push API / LogQL",
+      "boundary": "Log shipping and data-source provisioning are not configured yet.",
+      "source": "https://grafana.com/docs/loki/latest/"
+    },
+    {
+      "id": "otel",
+      "name": "OpenTelemetry",
+      "layer": "observability",
+      "status": "optional",
+      "role": "Instrument application traces, metrics and logs across services.",
+      "interface": "OTLP / SDK / Collector",
+      "boundary": "Application telemetry complements device SNMP and routing measurements.",
+      "source": "https://opentelemetry.io/docs/"
+    },
+    {
+      "id": "chrony",
+      "name": "chrony",
+      "layer": "observability",
+      "status": "planned",
+      "role": "Keep Linux lab hosts synchronized so evidence and change timelines can be compared.",
+      "interface": "NTP / chronyc",
+      "boundary": "Clock synchronization and timestamp validation must both be checked.",
+      "source": "https://chrony-project.org/documentation.html"
+    },
+    {
+      "id": "kafka",
+      "name": "Apache Kafka",
+      "layer": "pipeline",
+      "status": "compose",
+      "role": "Durable event streams for telemetry, detections and dead-letter records.",
+      "interface": "Kafka producer/consumer protocol",
+      "boundary": "Current lab uses one broker and replication factor 1.",
+      "source": "https://kafka.apache.org/documentation/",
+      "evidence": "docker-compose.yml"
+    },
+    {
+      "id": "kafka-connect",
+      "name": "Kafka Connect",
+      "layer": "pipeline",
+      "status": "optional",
+      "role": "Run connector-based imports/exports around Kafka.",
+      "interface": "Connector plugins / REST API",
+      "boundary": "Choose connectors for actual sources; current Python adapters do not require Connect.",
+      "source": "https://kafka.apache.org/documentation/#connect"
+    },
+    {
+      "id": "schema-registry",
+      "name": "Schema Registry",
+      "layer": "pipeline",
+      "status": "optional",
+      "role": "Manage event schema versions and compatibility policies.",
+      "interface": "REST API / serializers",
+      "boundary": "Current JSON/Pydantic contracts work without a registry; serializer migration is separate work.",
+      "source": "https://docs.confluent.io/platform/current/schema-registry/index.html"
+    },
+    {
+      "id": "minio",
+      "name": "MinIO",
+      "layer": "pipeline",
+      "status": "compose",
+      "role": "S3-compatible object storage for raw/processed Parquet and model artifacts.",
+      "interface": "S3 API",
+      "boundary": "Pinned community source build replaces an unavailable binary image tag. Upstream community repository is archived; image compilation and live storage remain unverified.",
+      "source": "https://github.com/minio/minio",
+      "evidence": "lab/storage/Dockerfile"
+    },
+    {
+      "id": "airflow",
+      "name": "Apache Airflow",
+      "layer": "pipeline",
+      "status": "compose",
+      "role": "Schedule data-processing DAGs with task dependency tracking.",
+      "interface": "DAGs / scheduler / REST API",
+      "boundary": "Optional orchestration profile; it is not the routing controller or radio scheduler.",
+      "source": "https://airflow.apache.org/docs/",
+      "evidence": "airflow/dags/telco_pipeline.py"
+    },
+    {
+      "id": "mlflow",
+      "name": "MLflow",
+      "layer": "pipeline",
+      "status": "compose",
+      "role": "Track training runs, evaluation metadata and model artifacts.",
+      "interface": "Tracking API / artifact store",
+      "boundary": "Model evaluations require a representative dataset; storage is not proof of detection quality.",
+      "source": "https://mlflow.org/docs/latest/index.html",
+      "evidence": "model/train.py"
+    },
+    {
+      "id": "postgres",
+      "name": "PostgreSQL",
+      "layer": "pipeline",
+      "status": "compose",
+      "role": "Relational state for applications such as Airflow and future NetBox/AWX services.",
+      "interface": "SQL",
+      "boundary": "Current PostgreSQL service belongs to Airflow; Strata incident/outbox state still uses SQLite.",
+      "source": "https://www.postgresql.org/docs/current/intro-whatis.html",
+      "evidence": "docker-compose.yml"
+    },
+    {
+      "id": "containerlab",
+      "name": "Containerlab",
+      "layer": "lab",
+      "status": "planned",
+      "role": "Define repeatable virtual-router nodes and point-to-point links.",
+      "interface": "Topology YAML / Linux containers",
+      "boundary": "Recommended transport-lab engine; a topology has not been deployed yet.",
+      "source": "https://containerlab.dev/manual/kinds/linux/"
+    },
+    {
+      "id": "gns3",
+      "name": "GNS3",
+      "layer": "lab",
+      "status": "adapter",
+      "role": "Build virtual network topologies and connect appliances/probes.",
+      "interface": "GNS3 v2 REST API",
+      "boundary": "Existing adapter reads nodes/links; it does not deploy licensed vendor images.",
+      "source": "https://docs.gns3.com/"
+    },
+    {
+      "id": "eve-ng",
+      "name": "EVE-NG",
+      "layer": "lab",
+      "status": "adapter",
+      "role": "Alternative virtual network lab with multi-appliance topologies.",
+      "interface": "Lab API",
+      "boundary": "External installation and version compatibility checks are required.",
+      "source": "https://www.eve-ng.net/index.php/documentation/"
+    },
+    {
+      "id": "iperf3",
+      "name": "iperf3",
+      "layer": "lab",
+      "status": "planned",
+      "role": "Generate real lab traffic and measure end-to-end throughput.",
+      "interface": "Client/server traffic / JSON output",
+      "boundary": "Needs active endpoints; a link label is not a throughput measurement.",
+      "source": "https://software.es.net/iperf/"
+    },
+    {
+      "id": "wireshark",
+      "name": "Wireshark / tshark",
+      "layer": "lab",
+      "status": "optional",
+      "role": "Inspect packet captures to explain protocol and connectivity failures.",
+      "interface": "PCAP / tshark CLI",
+      "boundary": "Capture only the lab interfaces and retain evidence with scenario IDs.",
+      "source": "https://www.wireshark.org/docs/"
+    },
+    {
+      "id": "open5gs",
+      "name": "Open5GS",
+      "layer": "mobile",
+      "status": "artifact",
+      "role": "Run an open-source EPC/5G core with subscriber, session and user-plane functions.",
+      "interface": "3GPP core interfaces / metrics / configuration",
+      "boundary": "Pinned source-build and native YAML override/session profile definitions exist. Image compilation, slice compatibility and actual PDU traffic validation are pending; no physical RF is modeled.",
+      "source": "https://open5gs.org/open5gs/docs/",
+      "evidence": "lab/mobile/Dockerfile.open5gs"
+    },
+    {
+      "id": "ueransim",
+      "name": "UERANSIM",
+      "layer": "mobile",
+      "status": "artifact",
+      "role": "Simulate UE/gNB protocol behavior against a 5G core for registration and PDU-session tests.",
+      "interface": "NGAP / NAS / GTP-U / simulated radio link",
+      "boundary": "Native gNB/UE configurations and source-build profile use public lab fixtures. Real registration/PDU sessions have not run on this laptop.",
+      "source": "https://github.com/aligungr/UERANSIM",
+      "evidence": "lab/config/mobile/ue.yml"
+    },
+    {
+      "id": "srsran",
+      "name": "srsRAN Project",
+      "layer": "mobile",
+      "status": "optional",
+      "role": "Explore actual software RAN CU/DU functions in a dedicated RAN lab.",
+      "interface": "3GPP/O-RAN interfaces / RAN configuration",
+      "boundary": "Radio/PHY testing depends on the selected supported test setup; not bundled into Strata.",
+      "source": "https://docs.srsran.com/projects/project/en/latest/"
+    },
+    {
+      "id": "oai",
+      "name": "OpenAirInterface",
+      "layer": "mobile",
+      "status": "optional",
+      "role": "Alternative software RAN/core research and integration track.",
+      "interface": "3GPP/O-RAN interfaces",
+      "boundary": "Choose a documented compatible deployment; not a second mandatory RAN stack.",
+      "source": "https://openairinterface.org/"
+    },
+    {
+      "id": "keycloak",
+      "name": "Keycloak",
+      "layer": "security",
+      "status": "planned",
+      "role": "Operator identity, OIDC login and role-based application access.",
+      "interface": "OIDC / OAuth2 / SAML",
+      "boundary": "Current shared Hub token is not a Keycloak or RBAC integration.",
+      "source": "https://www.keycloak.org/documentation"
+    },
+    {
+      "id": "openbao",
+      "name": "OpenBao",
+      "layer": "security",
+      "status": "optional",
+      "role": "Manage service/device secrets and access policies.",
+      "interface": "Secrets API",
+      "boundary": "A secret store still needs workload authentication and application integration.",
+      "source": "https://openbao.org/docs/"
+    },
+    {
+      "id": "n8n",
+      "name": "n8n",
+      "layer": "workflow",
+      "status": "optional",
+      "role": "Connect incident intake, operator review and operational notifications.",
+      "interface": "Webhooks / workflow nodes",
+      "boundary": "A compatible idempotent receiver must be built; self-hosting terms are separate from software functionality.",
+      "source": "https://docs.n8n.io/"
+    },
+    {
+      "id": "zammad",
+      "name": "Zammad",
+      "layer": "workflow",
+      "status": "optional",
+      "role": "Track incident ownership and change/ticket history.",
+      "interface": "Ticket REST API",
+      "boundary": "Ticket synchronization is planned; opening a ticket does not execute a network change.",
+      "source": "https://docs.zammad.org/en/latest/"
+    },
+    {
+      "id": "docker",
+      "name": "Docker Compose",
+      "layer": "platform",
+      "status": "compose",
+      "role": "Run the current persistent backend services and isolated container networks.",
+      "interface": "Compose YAML / Docker Engine",
+      "boundary": "A running Docker Engine is required; no live engine is available in this workspace.",
+      "source": "https://docs.docker.com/compose/",
+      "evidence": "docker-compose.yml"
+    },
+    {
+      "id": "kubernetes",
+      "name": "Kubernetes",
+      "layer": "platform",
+      "status": "optional",
+      "role": "Study declarative service orchestration and deployment lifecycle at a later stage.",
+      "interface": "Kubernetes API / manifests",
+      "boundary": "Legacy examples are separate from the root Compose runtime; running Kubernetes does not imply HA.",
+      "source": "https://kubernetes.io/docs/concepts/overview/"
+    },
+    {
+      "id": "terraform",
+      "name": "Terraform",
+      "layer": "platform",
+      "status": "optional",
+      "role": "Define infrastructure resources reproducibly when a cloud lab is available.",
+      "interface": "Providers / infrastructure state",
+      "boundary": "Legacy examples are not a verified free-tier deployment; provider resources may incur costs.",
+      "source": "https://developer.hashicorp.com/terraform/docs"
+    },
+    {
+      "id": "github-actions",
+      "name": "GitHub Actions",
+      "layer": "platform",
+      "status": "planned",
+      "role": "Validate configuration candidates and produce repeatable build/evidence artifacts.",
+      "interface": "Repository workflow YAML",
+      "boundary": "No automated router deployment pipeline is configured; Git push alone does not start the backend.",
+      "source": "https://docs.github.com/en/actions"
+    },
+    {
+      "id": "strata",
+      "name": "Strata",
+      "layer": "intelligence",
+      "status": "implemented",
+      "role": "Unify inventory context, incidents, service evidence and operator decision review.",
+      "interface": "Authenticated HTTP API / operations console",
+      "boundary": "Current workflows request review; device configuration execution and rollback are external/planned.",
+      "source": "https://github.com/RobertinoGladden/aiops-telco",
+      "evidence": "integrations/hub.py"
+    },
+    {
+      "id": "groq",
+      "name": "Groq",
+      "layer": "intelligence",
+      "status": "provider",
+      "role": "On-demand structured interpretation of saved incident evidence.",
+      "interface": "Provider API",
+      "boundary": "Optional provider credentials and usage allowance are required; AI does not own IP/routing allocation.",
+      "source": "https://console.groq.com/docs/overview",
+      "evidence": "integrations/intelligence.py"
+    },
+    {
+      "id": "openai",
+      "name": "OpenAI Decisions",
+      "layer": "intelligence",
+      "status": "provider",
+      "role": "Select typed next-step recommendations for operator policy review.",
+      "interface": "Provider API / decision audit",
+      "boundary": "Recommendations cannot directly execute arbitrary device commands.",
+      "source": "https://developers.openai.com/api/docs/guides/decisions",
+      "evidence": "integrations/intelligence.py"
+    }
+  ],
+  "allocations": [
+    {
+      "name": "IP / VLAN / VRF / ASN plan",
+      "owner": "netbox",
+      "explanation": "NetBox records intended allocations. Automation must validate uniqueness and reserve resources before rendering a device configuration."
+    },
+    {
+      "name": "BGP / OSPF paths and failover",
+      "owner": "frr",
+      "explanation": "Routing daemons calculate paths from protocol state and policy. Ansible applies the intended router settings; NetBox remains the design record."
+    },
+    {
+      "name": "Bandwidth, queues and loss experiments",
+      "owner": "tc",
+      "explanation": "Linux tc enforces lab egress queue/rate policy. netem reproduces delay and loss. These controls do not allocate physical radio spectrum."
+    },
+    {
+      "name": "Dynamic client IP leases",
+      "owner": "kea",
+      "explanation": "Kea assigns leases from configured address pools and reservations. IPAM and DHCP must use a shared, validated plan."
+    },
+    {
+      "name": "UE sessions and user-plane selection",
+      "owner": "open5gs",
+      "explanation": "Core functions manage subscriber/session context; SMF configures session forwarding through UPF. A PDU session is separate from radio resource allocation."
+    },
+    {
+      "name": "Radio resources / PRBs / scheduling",
+      "owner": "srsran",
+      "explanation": "The RAN scheduler owns radio-resource behavior in a compatible RAN setup. UERANSIM is used here for protocol simulation; RF measurements remain outside its evidence scope."
+    }
+  ],
+  "sites": [
+    {
+      "id": "JKT-001",
+      "name": "Jakarta aggregation",
+      "management": "10.80.1.0/24",
+      "service": "10.81.1.0/24",
+      "management_vlan": 101,
+      "service_vlan": 201,
+      "asn": 65101
+    },
+    {
+      "id": "BDG-001",
+      "name": "Bandung access",
+      "management": "10.80.2.0/24",
+      "service": "10.81.2.0/24",
+      "management_vlan": 102,
+      "service_vlan": 202,
+      "asn": 65102
+    },
+    {
+      "id": "SBY-001",
+      "name": "Surabaya access",
+      "management": "10.80.3.0/24",
+      "service": "10.81.3.0/24",
+      "management_vlan": 103,
+      "service_vlan": 203,
+      "asn": 65103
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "site-provisioning",
+      "name": "Bring a new site online",
+      "outcome": "A reserved allocation matches the rendered configuration, BGP sessions establish, and an end-to-end probe passes.",
+      "steps": [
+        {
+          "name": "Reserve the intended site resources",
+          "tools": [
+            "netbox"
+          ],
+          "evidence": "Site ID, unique prefixes/VLANs/ASN and reservation record."
+        },
+        {
+          "name": "Render a bounded configuration candidate",
+          "tools": [
+            "ansible"
+          ],
+          "evidence": "Candidate diff and allowlisted target inventory."
+        },
+        {
+          "name": "Validate reachability before the change",
+          "tools": [
+            "batfish"
+          ],
+          "evidence": "Supported snapshot analysis and baseline live probe results."
+        },
+        {
+          "name": "Approve and launch the configuration job",
+          "tools": [
+            "awx",
+            "ansible"
+          ],
+          "evidence": "Job ID, approver and idempotency key."
+        },
+        {
+          "name": "Establish routing and client services",
+          "tools": [
+            "frr",
+            "kea"
+          ],
+          "evidence": "BGP neighbor state, selected routes and DHCP lease."
+        },
+        {
+          "name": "Verify service traffic and record evidence",
+          "tools": [
+            "iperf3",
+            "zabbix",
+            "kafka",
+            "minio"
+          ],
+          "evidence": "Timestamped probe output, telemetry offsets and stored artifact."
+        }
+      ]
+    },
+    {
+      "id": "transport-failover",
+      "name": "Recover from an impaired backhaul",
+      "outcome": "Measured service performance returns after a reviewed path change; otherwise the lab restores its baseline.",
+      "steps": [
+        {
+          "name": "Apply the approved lab impairment",
+          "tools": [
+            "tc",
+            "ansible"
+          ],
+          "evidence": "Selected data interface and before/after qdisc output."
+        },
+        {
+          "name": "Detect measured loss and latency",
+          "tools": [
+            "zabbix",
+            "prometheus",
+            "alertmanager"
+          ],
+          "evidence": "Fresh source measurements and firing alert timestamps."
+        },
+        {
+          "name": "Persist the incident and its context",
+          "tools": [
+            "strata",
+            "kafka",
+            "minio",
+            "netbox"
+          ],
+          "evidence": "Incident version, source event IDs and topology context."
+        },
+        {
+          "name": "Review the proposed next step",
+          "tools": [
+            "groq",
+            "openai",
+            "strata"
+          ],
+          "evidence": "Optional AI audit or deterministic runbook review; maintenance and evidence checks."
+        },
+        {
+          "name": "Execute a bounded lab runbook",
+          "tools": [
+            "awx",
+            "ansible",
+            "frr"
+          ],
+          "evidence": "Config diff, saved baseline, job result and selected backup route."
+        },
+        {
+          "name": "Verify recovery or roll back",
+          "tools": [
+            "iperf3",
+            "zabbix",
+            "grafana"
+          ],
+          "evidence": "Post-change traffic measurements; restored baseline when verification fails."
+        }
+      ]
+    },
+    {
+      "id": "config-drift",
+      "name": "Explain and recover configuration drift",
+      "outcome": "The changed configuration is traced to a job/actor and the intended reachability is restored or the change is rejected.",
+      "steps": [
+        {
+          "name": "Compare captured and intended state",
+          "tools": [
+            "oxidized",
+            "netbox"
+          ],
+          "evidence": "Configuration revision, diff and intended site policy."
+        },
+        {
+          "name": "Reproduce the policy violation",
+          "tools": [
+            "batfish",
+            "iperf3"
+          ],
+          "evidence": "Snapshot query and a failed lab endpoint probe."
+        },
+        {
+          "name": "Open a reviewed change record",
+          "tools": [
+            "strata",
+            "zammad"
+          ],
+          "evidence": "Incident/change correlation and named reviewer."
+        },
+        {
+          "name": "Apply the supported restoration runbook",
+          "tools": [
+            "awx",
+            "ansible"
+          ],
+          "evidence": "Baseline artifact, target scope and execution result."
+        },
+        {
+          "name": "Confirm the restored network state",
+          "tools": [
+            "frr",
+            "zabbix",
+            "oxidized"
+          ],
+          "evidence": "Routes, fresh measurements and new configuration revision."
+        }
+      ]
+    },
+    {
+      "id": "mobile-session",
+      "name": "Investigate a failed 5G PDU session",
+      "outcome": "UE registration/session behavior and user-plane reachability are explained with protocol evidence, without claiming RF coverage validation.",
+      "steps": [
+        {
+          "name": "Define the virtual subscriber and core profile",
+          "tools": [
+            "open5gs",
+            "netbox"
+          ],
+          "evidence": "Lab-only subscriber, PLMN, DNN and address-pool plan."
+        },
+        {
+          "name": "Attempt registration and session establishment",
+          "tools": [
+            "ueransim",
+            "open5gs"
+          ],
+          "evidence": "UE/gNB logs and registration/PDU-session result."
+        },
+        {
+          "name": "Inspect core metrics and packet evidence",
+          "tools": [
+            "prometheus",
+            "wireshark",
+            "grafana"
+          ],
+          "evidence": "NGAP/NAS/GTP-U capture context and timestamped core observations."
+        },
+        {
+          "name": "Correlate the failure with the intended profile",
+          "tools": [
+            "strata",
+            "kafka",
+            "minio"
+          ],
+          "evidence": "Future mobile adapter event contract and saved protocol artifacts."
+        },
+        {
+          "name": "Apply and verify a reviewed lab correction",
+          "tools": [
+            "awx",
+            "ansible",
+            "iperf3"
+          ],
+          "evidence": "Supported core-config diff, restarted test session and user-plane traffic probe."
+        }
+      ]
+    }
+  ]
+}

@@ -5,14 +5,16 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "dist/github-upload"
 DIRECTORIES = ("aiops", "api", "consumer", "predictor", "model", "integrations", "config",
-               "console", "deploy", "scripts", "monitoring", "grafana", "airflow", "tests", "docs")
+               "console", "deploy", "scripts", "monitoring", "grafana", "airflow", "ansible", "tests", "docs", "lab")
 FILES = (".gitignore", ".dockerignore", ".env.example", "Dockerfile", "docker-compose.yml",
          "requirements.txt", "requirements-dev.txt", "README.md", "console.ps1", "start.ps1",
          "status.ps1", "stop.ps1", "train.ps1")
-BLOCKED = {"__pycache__", ".git", ".vercel", "venv", ".venv", "node_modules", "secrets", "data", "public"}
+BLOCKED = {"__pycache__", ".git", ".vercel", "venv", ".venv", "node_modules", "secrets", "data", "public", "runtime"}
 
 
 def allowed(file, relative):
+    if relative.parts[0] == "ansible" and relative.as_posix() != "ansible/lab_impairment.yml":
+        return False
     return (not file.is_symlink() and not any(part in BLOCKED for part in relative.parts) and
             not file.name.startswith(".env") and file.suffix not in {".pyc", ".pyo", ".log", ".sqlite", ".db"})
 

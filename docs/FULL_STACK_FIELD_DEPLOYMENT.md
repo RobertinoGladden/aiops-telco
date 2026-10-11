@@ -1,5 +1,7 @@
 # Full-stack cloud pilot with field telemetry
 
+The current user-facing scope is a noncommercial virtual-site portfolio. Start with [the internal software reference](LAB_REFERENCE.md); this document describes the optional later deployment of a continuously running full lab or authorized equipment pilot.
+
 The selected target is Strata processing actual equipment telemetry with Kafka, MinIO, continuous workers and operational monitoring retained. A reduced serverless backend is not the selected direction. GitHub stores source; Vercel hosts the console; a continuously running cloud VM or container host runs the backend. No backend code was replaced by the earlier hosting proposals.
 
 ```mermaid

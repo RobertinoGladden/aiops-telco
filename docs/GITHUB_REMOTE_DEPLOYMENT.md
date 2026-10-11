@@ -2,13 +2,13 @@
 
 The complete deployment described here keeps Strata available when your development laptop is off: GitHub stores the source, Vercel builds the console and its bounded proxy, and remote compute runs the continuous backend. Cloudflare Access and a named tunnel protect the server-hosted backend HTTPS endpoint. Physical drive-test equipment still needs an active collector near the equipment or on an independently connected device; a cloud dashboard cannot collect new readings from a powered-off field collector.
 
-**The selected target retains Kafka, MinIO and continuous workers for actual field telemetry.** With no VPS, personal server or paid cloud budget, investigate a free cloud VM using [the full-stack field deployment guide](FULL_STACK_FIELD_DEPLOYMENT.md). Steps 1 and 2 alone publish a frontend preview; they do not host the backend. No free VM has been provisioned or validated yet.
+**The current target is a noncommercial portfolio with complex virtual-site scenarios and real software roles.** Steps 1 and 2 publish the Digital Twin lab, with calculated network scenarios, changes and replayable evidence, without a running Hub. Kafka/MinIO processing and configuration execution still require a separate lab runtime. See [the portfolio guide](LAB_REFERENCE.md); the [full-stack field guide](FULL_STACK_FIELD_DEPLOYMENT.md) remains a future live-hosting reference. No free VM has been provisioned or validated yet.
 
-The current repository is `https://github.com/RobertinoGladden/aiops-telco`. Its public main branch still contains the older Telco AIOps files. Upload the updated source before importing it into Vercel. This local workspace came from a ZIP and has no project-local Git repository: its inherited Git root is the Windows home directory. Initialize Git inside this project before staging anything. The upload workflow below uses `git remote`, without cloning.
+The repository is `https://github.com/RobertinoGladden/aiops-telco`. This workspace now has a project-local Git repository, an origin remote and a committed source update. Upload the portfolio changes before importing/rebuilding on Vercel. Follow [the quickstart's subsequent-update commands](GIT_REMOTE_QUICKSTART.md) for this folder. The upload workflow uses `git remote`, without cloning.
 
 ## 1. Upload the current source to GitHub
 
-For this existing Downloads workspace, run the following in PowerShell. The remote already contains a main branch, so fetch that history before creating the update commit:
+The following initialization applies only to a fresh ZIP folder without its own `.git`. Skip it in the current initialized workspace. For a first-time import, fetch the existing main history before creating the update commit:
 
 ```powershell
 cd C:\Users\lapt1\Downloads\aiops-telco-main
@@ -24,7 +24,7 @@ Stage only the application source/configuration directories and named root files
 
 ```powershell
 git add .gitignore .dockerignore .env.example README.md Dockerfile docker-compose.yml requirements.txt requirements-dev.txt console.ps1 start.ps1 status.ps1 stop.ps1 train.ps1
-git add aiops api consumer predictor model integrations config console deploy scripts monitoring grafana airflow tests docs
+git add aiops api consumer predictor model integrations config console deploy scripts monitoring grafana airflow tests docs ansible/lab_impairment.yml
 git diff --cached --stat
 git commit -m "Update Strata console and GitHub deployment"
 git push -u origin main
@@ -66,11 +66,11 @@ In the Vercel dashboard, choose **Add New → Project**, connect GitHub and impo
 
 The last setting allows the build to read the repository's `console/` directory. The build copies only the known console files into `public/`, changes the login copy to the operator token, and leaves the proxy in `api/proxy.mjs`. Python dependencies and Kafka are not installed by this Vercel project. The configuration is in `deploy/vercel/vercel.json`. Leave Skip deployment disabled initially so edits to `console/` also trigger a fresh build.
 
-You can deploy the UI before provisioning the backend. It will show a sign-in page; the API returns a configuration/unavailable error until the server variables and backend exist. This is a frontend deployment, not a live telemetry demonstration.
+You can deploy **Strata Twin** without a backend or environment variables. The default Twin page executes deterministic operations in an isolated browser-local model; its explicit coverage is documented in [STRATA_TWIN.md](STRATA_TWIN.md). Other operational views still require a Hub connection. Twin metrics are calculated model outputs, not live telemetry or device changes.
 
 ### Testing with no paid cloud budget
 
-The selected route is a free VM candidate that can run persistent containers, with actual field data connected through an authorized private collector/vendor API. See [the full-stack field deployment guide](FULL_STACK_FIELD_DEPLOYMENT.md) for compute limits, ARM validation, equipment integration gaps and the unresolved HTTPS/authentication setup. Render/Supabase serverless-style testing was proposed earlier but is not the selected target, and no lighter backend was implemented.
+Publish Twin for the current portfolio; no telecom daemons or paid compute are required. Runs are local to each visitor and advance on commands. Shared state and unattended operation still need a durable backend. The [optional native lab definitions](EXECUTABLE_LAB.md) are a separate, not-yet-live-validated comparison path. The server/proxy instructions below apply only if connecting a real Hub later.
 
 The existing Vercel API is a proxy to the protected Hub, not a replacement for it; inventing backend URLs or leaving dummy Cloudflare credentials does not make it work. External AI requires valid provider access and its own usage allowance. [Vercel Functions have bounded execution durations](https://vercel.com/docs/functions/limitations), so the current continuous workers cannot simply be uploaded as functions. [Vercel Hobby is for personal, non-commercial use](https://vercel.com/docs/plans/hobby); evaluate the appropriate plan before using the deployment for commercial startup operations.
 

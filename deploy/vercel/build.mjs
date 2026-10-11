@@ -1,15 +1,26 @@
-import { mkdir, copyFile, readFile, writeFile, access } from "node:fs/promises";
+import { mkdir, copyFile, readFile, writeFile, access, rm } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
 
 const directory = fileURLToPath(new URL("./", import.meta.url));
 const source = path.resolve(directory, "../../console");
 const output = path.join(directory, "public");
-const assets = ["app.js", "app.css", "logo.svg"];
+// Remove known obsolete public reference assets from earlier local builds.
+for (const name of ["ecosystem.js", "ecosystem.json", "twin-coverage.json"])
+  await rm(path.join(output, "assets", name), {force: true});
+const assets = ["app.js", "app.css", "logo.svg", "twin-model-v1.js", "twin-model.js", "twin.js", "twin-blueprint.json", "device-config.js", "native-lab-pack.json"];
 
 let hasSource = false;
 try { await access(path.join(source, "index.html")); hasSource = true; } catch {}
 if (hasSource) {
+  // Repository builds refresh the explicit public config pack without Python or container services.
+  const generator = path.resolve(directory,"../../scripts/package_native_configs.cjs");
+  try {
+    await access(generator);
+    const result = spawnSync(process.execPath,[generator],{stdio:"inherit"});
+    if (result.status !== 0) throw new Error("Public native config generation failed");
+  } catch (error) { if (error.code !== "ENOENT") throw error; }
   await mkdir(path.join(output, "assets"), { recursive: true });
   for (const file of assets)
     await copyFile(path.join(source, "assets", file), path.join(output, "assets", file));

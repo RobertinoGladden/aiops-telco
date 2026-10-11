@@ -1,0 +1,29 @@
+[
+  {
+    "id": "JKT-001",
+    "name": "Jakarta aggregation",
+    "management": "10.80.1.0/24",
+    "service": "10.81.1.0/24",
+    "management_vlan": 101,
+    "service_vlan": 201,
+    "asn": 65101
+  },
+  {
+    "id": "BDG-001",
+    "name": "Bandung access",
+    "management": "10.80.2.0/24",
+    "service": "10.81.2.0/24",
+    "management_vlan": 102,
+    "service_vlan": 202,
+    "asn": 65102
+  },
+  {
+    "id": "SBY-001",
+    "name": "Surabaya access",
+    "management": "10.80.3.0/24",
+    "service": "10.81.3.0/24",
+    "management_vlan": 103,
+    "service_vlan": 203,
+    "asn": 65103
+  }
+]

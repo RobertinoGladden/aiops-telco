@@ -1,0 +1,307 @@
+{
+  "version": 1,
+  "model": "1.0.0",
+  "scope": "Selected operational contracts, never full software or protocol equivalence.",
+  "components": [
+    {
+      "id": "netbox",
+      "mode": "modeled",
+      "contract": "Selected site prefixes, unique VLANs/ASNs, intended configuration and reviewed intent updates.",
+      "boundary": "No NetBox REST API, ORM, device rack or circuit management."
+    },
+    {
+      "id": "frr",
+      "mode": "modeled",
+      "contract": "Local-preference path selection, failure detection delay and convergence; native FRR candidate export.",
+      "boundary": "No routing protocol packets, full BGP best-path algorithm, OSPF or BFD."
+    },
+    {
+      "id": "ovs",
+      "mode": "reference",
+      "contract": "Cataloged operational role; original runtime behavior is not implemented in Twin.",
+      "boundary": "OVSDB / OpenFlow remains an external software capability."
+    },
+    {
+      "id": "tc",
+      "mode": "modeled",
+      "contract": "Calculated primary-link delay/loss and fluid capacity constraints.",
+      "boundary": "No Linux qdisc, packet scheduling, TCP congestion control or kernel traffic shaping."
+    },
+    {
+      "id": "opendaylight",
+      "mode": "reference",
+      "contract": "Cataloged operational role; original runtime behavior is not implemented in Twin.",
+      "boundary": "RESTCONF / NETCONF / OpenFlow modules remains an external software capability."
+    },
+    {
+      "id": "kea",
+      "mode": "modeled",
+      "contract": "Collision-free DHCP pool allocation, renewal, exhaustion and expiry.",
+      "boundary": "No DHCP packet exchange, DHCPv6 or Kea control API."
+    },
+    {
+      "id": "powerdns",
+      "mode": "reference",
+      "contract": "Cataloged operational role; original runtime behavior is not implemented in Twin.",
+      "boundary": "DNS / HTTP API remains an external software capability."
+    },
+    {
+      "id": "freeradius",
+      "mode": "modeled",
+      "contract": "Public subscriber allowlist and admission rejection.",
+      "boundary": "No RADIUS wire protocol, authentication cryptography or accounting server."
+    },
+    {
+      "id": "ansible",
+      "mode": "modeled",
+      "contract": "Allowlisted changes with candidate, review, execution and verification states.",
+      "boundary": "No playbook interpreter or SSH runtime in the browser."
+    },
+    {
+      "id": "awx",
+      "mode": "modeled",
+      "contract": "Independent modeled reviewer, job lifecycle and execution history.",
+      "boundary": "Browser roles are an exercise, not identity security; no AWX API or credential store."
+    },
+    {
+      "id": "nornir",
+      "mode": "reference",
+      "contract": "Cataloged operational role; original runtime behavior is not implemented in Twin.",
+      "boundary": "Python task plugins remains an external software capability."
+    },
+    {
+      "id": "napalm",
+      "mode": "modeled",
+      "contract": "Before/after configuration snapshots, drift comparison and baseline restoration.",
+      "boundary": "No vendor drivers or device commit-confirm behavior."
+    },
+    {
+      "id": "netmiko",
+      "mode": "reference",
+      "contract": "Cataloged operational role; original runtime behavior is not implemented in Twin.",
+      "boundary": "Python SSH / device CLI remains an external software capability."
+    },
+    {
+      "id": "batfish",
+      "mode": "reference",
+      "contract": "Cataloged operational role; original runtime behavior is not implemented in Twin.",
+      "boundary": "Snapshot files / pybatfish remains an external software capability."
+    },
+    {
+      "id": "oxidized",
+      "mode": "modeled",
+      "contract": "Configuration revisions and change snapshots retained in audit evidence.",
+      "boundary": "No polling daemons, Git backup engine or device models."
+    },
+    {
+      "id": "zabbix",
+      "mode": "modeled",
+      "contract": "Consecutive threshold confirmation and recovery from modeled telemetry.",
+      "boundary": "No SNMP, agent, JSON-RPC, discovery or measured device health."
+    },
+    {
+      "id": "librenms",
+      "mode": "modeled",
+      "contract": "Network path and link-capacity observations in a unified site view.",
+      "boundary": "No SNMP, autodiscovery or LibreNMS REST API."
+    },
+    {
+      "id": "prometheus",
+      "mode": "modeled",
+      "contract": "Tick-stamped modeled observations and explicitly defined thresholds.",
+      "boundary": "No PromQL, scrape server or time-series storage engine."
+    },
+    {
+      "id": "grafana",
+      "mode": "modeled",
+      "contract": "Topology, model counters, event records and evidence views.",
+      "boundary": "Native Strata UI; no Grafana plugins or dashboard API."
+    },
+    {
+      "id": "alertmanager",
+      "mode": "reference",
+      "contract": "Cataloged operational role; original runtime behavior is not implemented in Twin.",
+      "boundary": "Webhook / alert routing remains an external software capability."
+    },
+    {
+      "id": "loki",
+      "mode": "modeled",
+      "contract": "Searchable-by-export operational audit entries correlated to job IDs.",
+      "boundary": "No log shipping, LogQL or application stdout collection."
+    },
+    {
+      "id": "otel",
+      "mode": "reference",
+      "contract": "Cataloged operational role; original runtime behavior is not implemented in Twin.",
+      "boundary": "OTLP / SDK / Collector remains an external software capability."
+    },
+    {
+      "id": "chrony",
+      "mode": "reference",
+      "contract": "Cataloged operational role; original runtime behavior is not implemented in Twin.",
+      "boundary": "NTP / chronyc remains an external software capability."
+    },
+    {
+      "id": "kafka",
+      "mode": "modeled",
+      "contract": "Three partitions, offsets, independent consumer groups, outbox retry and event-ID deduplication.",
+      "boundary": "No Kafka protocol, broker process, replicas, rebalancing, leader election or exactly-once transaction guarantee."
+    },
+    {
+      "id": "kafka-connect",
+      "mode": "reference",
+      "contract": "Cataloged operational role; original runtime behavior is not implemented in Twin.",
+      "boundary": "Connector plugins / REST API remains an external software capability."
+    },
+    {
+      "id": "schema-registry",
+      "mode": "modeled",
+      "contract": "Schema-version validation with invalid-event dead-letter delivery before commit.",
+      "boundary": "No registry REST API, Avro/Protobuf serializer or schema compatibility algorithm."
+    },
+    {
+      "id": "minio",
+      "mode": "modeled",
+      "contract": "JSON evidence objects, explicit model availability and idempotent object version writes.",
+      "boundary": "No S3 API, erasure coding, filesystem durability or Parquet processing."
+    },
+    {
+      "id": "airflow",
+      "mode": "reference",
+      "contract": "Cataloged operational role; original runtime behavior is not implemented in Twin.",
+      "boundary": "DAGs / scheduler / REST API remains an external software capability."
+    },
+    {
+      "id": "mlflow",
+      "mode": "reference",
+      "contract": "Cataloged operational role; original runtime behavior is not implemented in Twin.",
+      "boundary": "Tracking API / artifact store remains an external software capability."
+    },
+    {
+      "id": "postgres",
+      "mode": "reference",
+      "contract": "Cataloged operational role; original runtime behavior is not implemented in Twin.",
+      "boundary": "SQL remains an external software capability."
+    },
+    {
+      "id": "containerlab",
+      "mode": "reference",
+      "contract": "Cataloged operational role; original runtime behavior is not implemented in Twin.",
+      "boundary": "Topology YAML / Linux containers remains an external software capability."
+    },
+    {
+      "id": "gns3",
+      "mode": "modeled",
+      "contract": "Declared three-site topology with dual core paths and virtual link failures.",
+      "boundary": "No appliance execution or GNS3 API."
+    },
+    {
+      "id": "eve-ng",
+      "mode": "modeled",
+      "contract": "Shared virtual-site topology state and operational inspection.",
+      "boundary": "No network OS execution or EVE-NG API."
+    },
+    {
+      "id": "iperf3",
+      "mode": "modeled",
+      "contract": "Throughput derived from offered load, capacity, loss and shared core limits.",
+      "boundary": "Calculated model output; no sockets or actual traffic measurements."
+    },
+    {
+      "id": "wireshark",
+      "mode": "reference",
+      "contract": "Cataloged operational role; original runtime behavior is not implemented in Twin.",
+      "boundary": "PCAP / tshark CLI remains an external software capability."
+    },
+    {
+      "id": "open5gs",
+      "mode": "modeled",
+      "contract": "Registration, slice admission, PDU address allocation, release and core-failure states.",
+      "boundary": "No NAS/SCTP/GTP/PFCP or SIM cryptography; not a 3GPP conformance implementation."
+    },
+    {
+      "id": "ueransim",
+      "mode": "modeled",
+      "contract": "Public test-subscriber registration and session lifecycle commands.",
+      "boundary": "No UE/gNB processes or air-interface protocol implementation."
+    },
+    {
+      "id": "srsran",
+      "mode": "reference",
+      "contract": "Cataloged operational role; original runtime behavior is not implemented in Twin.",
+      "boundary": "3GPP/O-RAN interfaces / RAN configuration remains an external software capability."
+    },
+    {
+      "id": "oai",
+      "mode": "reference",
+      "contract": "Cataloged operational role; original runtime behavior is not implemented in Twin.",
+      "boundary": "3GPP/O-RAN interfaces remains an external software capability."
+    },
+    {
+      "id": "keycloak",
+      "mode": "reference",
+      "contract": "Cataloged operational role; original runtime behavior is not implemented in Twin.",
+      "boundary": "OIDC / OAuth2 / SAML remains an external software capability."
+    },
+    {
+      "id": "openbao",
+      "mode": "reference",
+      "contract": "Cataloged operational role; original runtime behavior is not implemented in Twin.",
+      "boundary": "Secrets API remains an external software capability."
+    },
+    {
+      "id": "n8n",
+      "mode": "modeled",
+      "contract": "Fixed propose, approve, execute, verify, rollback and evidence-delivery workflow.",
+      "boundary": "No arbitrary visual workflow builder, connector execution or n8n API."
+    },
+    {
+      "id": "zammad",
+      "mode": "modeled",
+      "contract": "Confirmed incident records, reasons and recovery transitions.",
+      "boundary": "No helpdesk assignment, customer messaging or Zammad API."
+    },
+    {
+      "id": "docker",
+      "mode": "reference",
+      "contract": "Cataloged operational role; original runtime behavior is not implemented in Twin.",
+      "boundary": "Compose YAML / Docker Engine remains an external software capability."
+    },
+    {
+      "id": "kubernetes",
+      "mode": "reference",
+      "contract": "Cataloged operational role; original runtime behavior is not implemented in Twin.",
+      "boundary": "Kubernetes API / manifests remains an external software capability."
+    },
+    {
+      "id": "terraform",
+      "mode": "reference",
+      "contract": "Cataloged operational role; original runtime behavior is not implemented in Twin.",
+      "boundary": "Providers / infrastructure state remains an external software capability."
+    },
+    {
+      "id": "github-actions",
+      "mode": "reference",
+      "contract": "Cataloged operational role; original runtime behavior is not implemented in Twin.",
+      "boundary": "Repository workflow YAML remains an external software capability."
+    },
+    {
+      "id": "strata",
+      "mode": "modeled",
+      "contract": "Owned deterministic engine, operations UI, command replay and evidence export.",
+      "boundary": "A single-browser portfolio simulator; production identity and shared durable cloud state require a backend."
+    },
+    {
+      "id": "groq",
+      "mode": "provider",
+      "contract": "Existing real-stack provider adapter is separate from Twin.",
+      "boundary": "Twin does not call this provider, generate AI analysis or expose API credentials."
+    },
+    {
+      "id": "openai",
+      "mode": "provider",
+      "contract": "Existing real-stack provider adapter is separate from Twin.",
+      "boundary": "Twin does not call this provider, generate AI analysis or expose API credentials."
+    }
+  ]
+}

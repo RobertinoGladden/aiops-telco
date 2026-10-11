@@ -1,0 +1,42 @@
+# Native Open5GS v2.7.6 isolated lab; not a measured or live-validated deployment.
+# Public DNS addresses are upstream defaults; the internal Docker network has no Internet egress.
+logger:
+  file:
+    path: /lab/logs/smf.log
+  level: info
+global:
+  max:
+    ue: 1024
+smf:
+  sbi:
+    server:
+    - address: 127.0.0.4
+      port: 7777
+    client:
+      scp:
+      - uri: http://127.0.0.200:7777
+  pfcp:
+    server:
+    - address: 127.0.0.4
+    client:
+      upf:
+      - address: 127.0.0.7
+  gtpc:
+    server:
+    - address: 127.0.0.4
+  gtpu:
+    server:
+    - address: 127.0.0.4
+  metrics:
+    server:
+    - address: 172.28.80.50
+      port: 9091
+  session:
+  - subnet: 10.45.0.0/16
+    gateway: 10.45.0.1
+    dnn: internet
+  dns:
+  - 8.8.8.8
+  - 8.8.4.4
+  mtu: 1400
+  freeDiameter: /opt/open5gs/etc/freeDiameter/smf.conf

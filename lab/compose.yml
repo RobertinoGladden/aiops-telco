@@ -1,0 +1,826 @@
+name: strata-engineering-lab
+services:
+  jkt-router:
+    build:
+      context: ..
+      dockerfile: lab/router/Dockerfile
+    image: strata-lab-router:local
+    hostname: jkt-router
+    cap_add:
+    - NET_ADMIN
+    - NET_RAW
+    mem_limit: 96m
+    environment:
+      LAB_ROLE: router
+      CARRIER_IP: 10.254.1.10
+      VLAN_ID: '201'
+      SERVICE_IP: 10.81.1.1/24
+      MANAGEMENT_LOOPBACK: 10.80.1.1/32
+      PRIMARY_IP: 10.250.0.11
+    volumes:
+    - ./runtime/ssh/id_ed25519.pub:/lab/authorized_keys:ro
+    - lab-host-keys-jkt-router:/lab/host-keys
+    - ./config/frr/jkt.conf:/lab/frr.conf:ro
+    networks:
+      management:
+        ipv4_address: 172.28.80.11
+      primary:
+        ipv4_address: 10.250.0.11
+      backup:
+        ipv4_address: 10.251.0.11
+      site-jkt:
+        ipv4_address: 10.254.1.10
+    healthcheck:
+      test:
+      - CMD
+      - python3
+      - -c
+      - import socket; socket.create_connection(('127.0.0.1',22),2).close()
+      interval: 10s
+      timeout: 3s
+      retries: 12
+    sysctls:
+      net.ipv4.ip_forward: '1'
+      net.ipv4.conf.all.rp_filter: '0'
+      net.ipv4.conf.default.rp_filter: '0'
+  jkt-client:
+    build:
+      context: ..
+      dockerfile: lab/router/Dockerfile
+    image: strata-lab-router:local
+    hostname: jkt-client
+    cap_add:
+    - NET_ADMIN
+    - NET_RAW
+    mem_limit: 96m
+    environment:
+      LAB_ROLE: client
+      CARRIER_IP: 10.254.1.20
+      VLAN_ID: '201'
+      SERVICE_IP: 10.81.1.2/24
+      SERVICE_GATEWAY: 10.81.1.1
+    volumes:
+    - ./runtime/ssh/id_ed25519.pub:/lab/authorized_keys:ro
+    - lab-host-keys-jkt-client:/lab/host-keys
+    networks:
+      management:
+        ipv4_address: 172.28.80.21
+      site-jkt:
+        ipv4_address: 10.254.1.20
+    healthcheck:
+      test:
+      - CMD
+      - python3
+      - -c
+      - import socket; socket.create_connection(('127.0.0.1',22),2).close()
+      interval: 10s
+      timeout: 3s
+      retries: 12
+  bdg-router:
+    build:
+      context: ..
+      dockerfile: lab/router/Dockerfile
+    image: strata-lab-router:local
+    hostname: bdg-router
+    cap_add:
+    - NET_ADMIN
+    - NET_RAW
+    mem_limit: 96m
+    environment:
+      LAB_ROLE: router
+      CARRIER_IP: 10.254.2.10
+      VLAN_ID: '202'
+      SERVICE_IP: 10.81.2.1/24
+      MANAGEMENT_LOOPBACK: 10.80.2.1/32
+      PRIMARY_IP: 10.250.0.12
+    volumes:
+    - ./runtime/ssh/id_ed25519.pub:/lab/authorized_keys:ro
+    - lab-host-keys-bdg-router:/lab/host-keys
+    - ./config/frr/bdg.conf:/lab/frr.conf:ro
+    networks:
+      management:
+        ipv4_address: 172.28.80.12
+      primary:
+        ipv4_address: 10.250.0.12
+      backup:
+        ipv4_address: 10.251.0.12
+      site-bdg:
+        ipv4_address: 10.254.2.10
+    healthcheck:
+      test:
+      - CMD
+      - python3
+      - -c
+      - import socket; socket.create_connection(('127.0.0.1',22),2).close()
+      interval: 10s
+      timeout: 3s
+      retries: 12
+    sysctls:
+      net.ipv4.ip_forward: '1'
+      net.ipv4.conf.all.rp_filter: '0'
+      net.ipv4.conf.default.rp_filter: '0'
+  bdg-client:
+    build:
+      context: ..
+      dockerfile: lab/router/Dockerfile
+    image: strata-lab-router:local
+    hostname: bdg-client
+    cap_add:
+    - NET_ADMIN
+    - NET_RAW
+    mem_limit: 96m
+    environment:
+      LAB_ROLE: client
+      CARRIER_IP: 10.254.2.20
+      VLAN_ID: '202'
+      SERVICE_IP: 10.81.2.2/24
+      SERVICE_GATEWAY: 10.81.2.1
+    volumes:
+    - ./runtime/ssh/id_ed25519.pub:/lab/authorized_keys:ro
+    - lab-host-keys-bdg-client:/lab/host-keys
+    networks:
+      management:
+        ipv4_address: 172.28.80.22
+      site-bdg:
+        ipv4_address: 10.254.2.20
+    healthcheck:
+      test:
+      - CMD
+      - python3
+      - -c
+      - import socket; socket.create_connection(('127.0.0.1',22),2).close()
+      interval: 10s
+      timeout: 3s
+      retries: 12
+  sby-router:
+    build:
+      context: ..
+      dockerfile: lab/router/Dockerfile
+    image: strata-lab-router:local
+    hostname: sby-router
+    cap_add:
+    - NET_ADMIN
+    - NET_RAW
+    mem_limit: 96m
+    environment:
+      LAB_ROLE: router
+      CARRIER_IP: 10.254.3.10
+      VLAN_ID: '203'
+      SERVICE_IP: 10.81.3.1/24
+      MANAGEMENT_LOOPBACK: 10.80.3.1/32
+      PRIMARY_IP: 10.250.0.13
+    volumes:
+    - ./runtime/ssh/id_ed25519.pub:/lab/authorized_keys:ro
+    - lab-host-keys-sby-router:/lab/host-keys
+    - ./config/frr/sby.conf:/lab/frr.conf:ro
+    networks:
+      management:
+        ipv4_address: 172.28.80.13
+      primary:
+        ipv4_address: 10.250.0.13
+      backup:
+        ipv4_address: 10.251.0.13
+      site-sby:
+        ipv4_address: 10.254.3.10
+    healthcheck:
+      test:
+      - CMD
+      - python3
+      - -c
+      - import socket; socket.create_connection(('127.0.0.1',22),2).close()
+      interval: 10s
+      timeout: 3s
+      retries: 12
+    sysctls:
+      net.ipv4.ip_forward: '1'
+      net.ipv4.conf.all.rp_filter: '0'
+      net.ipv4.conf.default.rp_filter: '0'
+  sby-client:
+    build:
+      context: ..
+      dockerfile: lab/router/Dockerfile
+    image: strata-lab-router:local
+    hostname: sby-client
+    cap_add:
+    - NET_ADMIN
+    - NET_RAW
+    mem_limit: 96m
+    environment:
+      LAB_ROLE: client
+      CARRIER_IP: 10.254.3.20
+      VLAN_ID: '203'
+      SERVICE_IP: 10.81.3.2/24
+      SERVICE_GATEWAY: 10.81.3.1
+    volumes:
+    - ./runtime/ssh/id_ed25519.pub:/lab/authorized_keys:ro
+    - lab-host-keys-sby-client:/lab/host-keys
+    networks:
+      management:
+        ipv4_address: 172.28.80.23
+      site-sby:
+        ipv4_address: 10.254.3.20
+    healthcheck:
+      test:
+      - CMD
+      - python3
+      - -c
+      - import socket; socket.create_connection(('127.0.0.1',22),2).close()
+      interval: 10s
+      timeout: 3s
+      retries: 12
+  core-primary:
+    build:
+      context: ..
+      dockerfile: lab/router/Dockerfile
+    image: strata-lab-router:local
+    hostname: core-primary
+    cap_add:
+    - NET_ADMIN
+    - NET_RAW
+    mem_limit: 96m
+    environment:
+      LAB_ROLE: router
+    volumes:
+    - ./runtime/ssh/id_ed25519.pub:/lab/authorized_keys:ro
+    - lab-host-keys-core-primary:/lab/host-keys
+    - ./config/frr/core-primary.conf:/lab/frr.conf:ro
+    networks:
+      management:
+        ipv4_address: 172.28.80.2
+      primary:
+        ipv4_address: 10.250.0.1
+      service:
+        ipv4_address: 10.90.0.1
+    healthcheck:
+      test:
+      - CMD
+      - python3
+      - -c
+      - import socket; socket.create_connection(('127.0.0.1',22),2).close()
+      interval: 10s
+      timeout: 3s
+      retries: 12
+    sysctls:
+      net.ipv4.ip_forward: '1'
+      net.ipv4.conf.all.rp_filter: '0'
+      net.ipv4.conf.default.rp_filter: '0'
+  core-backup:
+    build:
+      context: ..
+      dockerfile: lab/router/Dockerfile
+    image: strata-lab-router:local
+    hostname: core-backup
+    cap_add:
+    - NET_ADMIN
+    - NET_RAW
+    mem_limit: 96m
+    environment:
+      LAB_ROLE: router
+    volumes:
+    - ./runtime/ssh/id_ed25519.pub:/lab/authorized_keys:ro
+    - lab-host-keys-core-backup:/lab/host-keys
+    - ./config/frr/core-backup.conf:/lab/frr.conf:ro
+    networks:
+      management:
+        ipv4_address: 172.28.80.3
+      backup:
+        ipv4_address: 10.251.0.1
+      service:
+        ipv4_address: 10.90.0.2
+    healthcheck:
+      test:
+      - CMD
+      - python3
+      - -c
+      - import socket; socket.create_connection(('127.0.0.1',22),2).close()
+      interval: 10s
+      timeout: 3s
+      retries: 12
+    sysctls:
+      net.ipv4.ip_forward: '1'
+      net.ipv4.conf.all.rp_filter: '0'
+      net.ipv4.conf.default.rp_filter: '0'
+  traffic-server:
+    build:
+      context: ..
+      dockerfile: lab/router/Dockerfile
+    image: strata-lab-router:local
+    hostname: traffic-server
+    cap_add:
+    - NET_ADMIN
+    - NET_RAW
+    mem_limit: 96m
+    environment:
+      LAB_ROLE: server
+      SITE_PREFIXES: 10.81.1.0/24,10.81.2.0/24,10.81.3.0/24
+    volumes:
+    - ./runtime/ssh/id_ed25519.pub:/lab/authorized_keys:ro
+    - lab-host-keys-traffic-server:/lab/host-keys
+    networks:
+      management:
+        ipv4_address: 172.28.80.4
+      service:
+        ipv4_address: 10.90.0.10
+    healthcheck:
+      test:
+      - CMD
+      - python3
+      - -c
+      - import socket; socket.create_connection(('127.0.0.1',22),2).close()
+      interval: 10s
+      timeout: 3s
+      retries: 12
+  lab-controller:
+    build:
+      context: ..
+      dockerfile: lab/automation/Dockerfile
+    mem_limit: 320m
+    ports:
+    - 127.0.0.1:8084:8084
+    env_file: .env
+    environment:
+      LAB_PIPELINE_ENABLED: ${LAB_PIPELINE_ENABLED:-false}
+      LAB_NETBOX_ENABLED: ${LAB_NETBOX_ENABLED:-false}
+    volumes:
+    - ./config:/lab/config:ro
+    - ./runtime/ssh:/lab/ssh:ro
+    - lab-evidence:/lab/evidence
+    networks:
+    - management
+    depends_on:
+      jkt-router:
+        condition: service_healthy
+      bdg-router:
+        condition: service_healthy
+      sby-router:
+        condition: service_healthy
+  kafka:
+    image: apache/kafka:3.9.1
+    profiles:
+    - data
+    mem_limit: 768m
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'
+      KAFKA_HEAP_OPTS: -Xms256m -Xmx512m
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+    networks:
+    - management
+    volumes:
+    - lab-kafka:/var/lib/kafka/data
+    healthcheck:
+      test:
+      - CMD
+      - /opt/kafka/bin/kafka-topics.sh
+      - --bootstrap-server
+      - localhost:9092
+      - --list
+      interval: 10s
+      timeout: 10s
+      retries: 18
+  kafka-init:
+    image: apache/kafka:3.9.1
+    profiles:
+    - data
+    networks:
+    - management
+    entrypoint:
+    - /bin/bash
+    - -ec
+    - for topic in telco.network.metrics telco.network.dead-letter telco.network.predictions
+      strata.lab.changes; do /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092
+      --create --if-not-exists --topic "$$topic" --partitions 1 --replication-factor
+      1; done
+    depends_on:
+      kafka:
+        condition: service_healthy
+    restart: 'no'
+  minio:
+    build:
+      context: ..
+      dockerfile: lab/storage/Dockerfile
+    image: strata-minio-community:local
+    profiles:
+    - data
+    mem_limit: 384m
+    command:
+    - server
+    - /data
+    - --console-address
+    - :9001
+    env_file: .env
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    ports:
+    - 127.0.0.1:19000:9000
+    - 127.0.0.1:19001:9001
+    networks:
+    - management
+    volumes:
+    - lab-minio:/data
+  minio-init:
+    build: ..
+    image: strata-lab-app:local
+    profiles:
+    - data
+    env_file: .env
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      MINIO_ENDPOINT: http://minio:9000
+      INTEGRATION_HUB_URL: http://integration-hub:8082
+      MODEL_API_URL: http://127.0.0.1:1
+      AIOPS_STATE_DB: /app/data/integrations.sqlite
+      CONNECTORS_FILE: /app/config/connectors.yml
+      NETBOX_ENABLED: ${LAB_NETBOX_ENABLED:-false}
+      NETBOX_URL: http://netbox:8080
+      PROMETHEUS_URL: http://prometheus:9090
+      GRAFANA_URL: http://grafana:3000
+      STORAGE_METRICS_URL: http://consumer:9101
+      PREDICTOR_METRICS_URL: http://predictor:9102
+      STORAGE_BATCH_SIZE: '32'
+      STORAGE_BATCH_SECONDS: '5'
+      CONNECTOR_POLL_SECONDS: '10'
+      INCIDENT_CONFIRMATIONS: '2'
+      RECOVERY_CONFIRMATIONS: '2'
+      AI_ENABLED: 'false'
+    command:
+    - python
+    - -m
+    - scripts.bootstrap_storage
+    networks:
+    - management
+    mem_limit: 512m
+    depends_on:
+    - minio
+    restart: 'no'
+  integration-hub:
+    build: ..
+    image: strata-lab-app:local
+    profiles:
+    - data
+    env_file: .env
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      MINIO_ENDPOINT: http://minio:9000
+      INTEGRATION_HUB_URL: http://integration-hub:8082
+      MODEL_API_URL: http://127.0.0.1:1
+      AIOPS_STATE_DB: /app/data/integrations.sqlite
+      CONNECTORS_FILE: /app/config/connectors.yml
+      NETBOX_ENABLED: ${LAB_NETBOX_ENABLED:-false}
+      NETBOX_URL: http://netbox:8080
+      PROMETHEUS_URL: http://prometheus:9090
+      GRAFANA_URL: http://grafana:3000
+      STORAGE_METRICS_URL: http://consumer:9101
+      PREDICTOR_METRICS_URL: http://predictor:9102
+      STORAGE_BATCH_SIZE: '32'
+      STORAGE_BATCH_SECONDS: '5'
+      CONNECTOR_POLL_SECONDS: '10'
+      INCIDENT_CONFIRMATIONS: '2'
+      RECOVERY_CONFIRMATIONS: '2'
+      AI_ENABLED: 'false'
+    command:
+    - python
+    - -m
+    - integrations.hub
+    networks:
+    - management
+    mem_limit: 512m
+    ports:
+    - 127.0.0.1:18082:8082
+    volumes:
+    - lab-hub:/app/data
+    - ../config:/app/config:ro
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+  consumer:
+    build: ..
+    image: strata-lab-app:local
+    profiles:
+    - data
+    env_file: .env
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      MINIO_ENDPOINT: http://minio:9000
+      INTEGRATION_HUB_URL: http://integration-hub:8082
+      MODEL_API_URL: http://127.0.0.1:1
+      AIOPS_STATE_DB: /app/data/integrations.sqlite
+      CONNECTORS_FILE: /app/config/connectors.yml
+      NETBOX_ENABLED: ${LAB_NETBOX_ENABLED:-false}
+      NETBOX_URL: http://netbox:8080
+      PROMETHEUS_URL: http://prometheus:9090
+      GRAFANA_URL: http://grafana:3000
+      STORAGE_METRICS_URL: http://consumer:9101
+      PREDICTOR_METRICS_URL: http://predictor:9102
+      STORAGE_BATCH_SIZE: '32'
+      STORAGE_BATCH_SECONDS: '5'
+      CONNECTOR_POLL_SECONDS: '10'
+      INCIDENT_CONFIRMATIONS: '2'
+      RECOVERY_CONFIRMATIONS: '2'
+      AI_ENABLED: 'false'
+    command:
+    - python
+    - -m
+    - consumer.kafka_to_minio
+    networks:
+    - management
+    mem_limit: 512m
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+      minio-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+  predictor:
+    build: ..
+    image: strata-lab-app:local
+    profiles:
+    - data
+    env_file: .env
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      MINIO_ENDPOINT: http://minio:9000
+      INTEGRATION_HUB_URL: http://integration-hub:8082
+      MODEL_API_URL: http://127.0.0.1:1
+      AIOPS_STATE_DB: /app/data/integrations.sqlite
+      CONNECTORS_FILE: /app/config/connectors.yml
+      NETBOX_ENABLED: ${LAB_NETBOX_ENABLED:-false}
+      NETBOX_URL: http://netbox:8080
+      PROMETHEUS_URL: http://prometheus:9090
+      GRAFANA_URL: http://grafana:3000
+      STORAGE_METRICS_URL: http://consumer:9101
+      PREDICTOR_METRICS_URL: http://predictor:9102
+      STORAGE_BATCH_SIZE: '32'
+      STORAGE_BATCH_SECONDS: '5'
+      CONNECTOR_POLL_SECONDS: '10'
+      INCIDENT_CONFIRMATIONS: '2'
+      RECOVERY_CONFIRMATIONS: '2'
+      AI_ENABLED: 'false'
+    command:
+    - python
+    - -m
+    - predictor.auto_predictor
+    networks:
+    - management
+    mem_limit: 512m
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+  prometheus:
+    image: prom/prometheus:v3.2.1
+    profiles:
+    - monitoring
+    mem_limit: 256m
+    command:
+    - --config.file=/etc/prometheus/prometheus.yml
+    - --storage.tsdb.retention.time=2d
+    ports:
+    - 127.0.0.1:19090:9090
+    volumes:
+    - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    - lab-prometheus:/prometheus
+    networks:
+    - management
+  grafana:
+    image: grafana/grafana:11.6.0
+    profiles:
+    - monitoring
+    mem_limit: 256m
+    ports:
+    - 127.0.0.1:13000:3000
+    env_file: .env
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: 'false'
+    volumes:
+    - ./config/grafana:/etc/grafana/provisioning:ro
+    - lab-grafana:/var/lib/grafana
+    networks:
+    - management
+  netbox-postgres:
+    image: postgres:17-alpine
+    profiles:
+    - inventory
+    mem_limit: 256m
+    env_file: .env
+    environment:
+      POSTGRES_DB: netbox
+      POSTGRES_USER: netbox
+      POSTGRES_PASSWORD: ${NETBOX_DB_PASSWORD}
+    volumes:
+    - lab-netbox-db:/var/lib/postgresql/data
+    networks:
+    - management
+    healthcheck:
+      test:
+      - CMD
+      - pg_isready
+      - -U
+      - netbox
+      interval: 10s
+      retries: 10
+  netbox-redis:
+    image: valkey/valkey:8.0-alpine
+    profiles:
+    - inventory
+    mem_limit: 128m
+    command:
+    - valkey-server
+    - --requirepass
+    - ${NETBOX_REDIS_PASSWORD}
+    networks:
+    - management
+    volumes:
+    - lab-netbox-redis:/data
+  netbox:
+    image: netboxcommunity/netbox:v4.2-3.2.0
+    profiles:
+    - inventory
+    mem_limit: 1024m
+    env_file: .env
+    ports:
+    - 127.0.0.1:18000:8080
+    networks:
+    - management
+    environment:
+      DB_HOST: netbox-postgres
+      DB_NAME: netbox
+      DB_USER: netbox
+      DB_PASSWORD: ${NETBOX_DB_PASSWORD}
+      REDIS_HOST: netbox-redis
+      REDIS_CACHE_HOST: netbox-redis
+      REDIS_PASSWORD: ${NETBOX_REDIS_PASSWORD}
+      REDIS_CACHE_PASSWORD: ${NETBOX_REDIS_PASSWORD}
+      REDIS_DATABASE: 0
+      REDIS_CACHE_DATABASE: 1
+      SECRET_KEY: ${NETBOX_SECRET_KEY}
+      ALLOWED_HOSTS: netbox localhost 127.0.0.1
+      SKIP_SUPERUSER: 'true'
+      METRICS_ENABLED: 'true'
+      CENSUS_REPORTING_ENABLED: 'false'
+    volumes:
+    - ./config:/lab/config:ro
+    - ./automation/seed_netbox.py:/lab/seed_netbox.py:ro
+    - lab-netbox-media:/opt/netbox/netbox/media
+    depends_on:
+      netbox-postgres:
+        condition: service_healthy
+      netbox-redis:
+        condition: service_started
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://localhost:8080/login/
+      interval: 15s
+      start_period: 90s
+      retries: 20
+  mobile-mongo:
+    image: mongo:7.0
+    profiles:
+    - mobile
+    mem_limit: 384m
+    networks:
+    - management
+    volumes:
+    - lab-mobile-mongo:/data/db
+  open5gs:
+    build:
+      context: ..
+      dockerfile: lab/mobile/Dockerfile.open5gs
+    image: strata-open5gs:local
+    profiles:
+    - mobile
+    mem_limit: 768m
+    cap_add:
+    - NET_ADMIN
+    devices:
+    - /dev/net/tun:/dev/net/tun
+    sysctls:
+      net.ipv4.ip_forward: '1'
+    networks:
+      management:
+        ipv4_address: 172.28.80.50
+    volumes:
+    - ./config:/lab/config:ro
+    - lab-mobile-logs:/lab/logs
+    depends_on:
+    - mobile-mongo
+    - core-primary
+  ueransim-gnb:
+    build: &id001
+      context: ..
+      dockerfile: lab/mobile/Dockerfile.ueransim
+    image: strata-ueransim:local
+    profiles: &id002
+    - mobile
+    mem_limit: 128m
+    volumes: &id003
+    - ./config/mobile:/lab/config:ro
+    command:
+    - /src/build/nr-gnb
+    - -c
+    - /lab/config/gnb.yml
+    networks:
+      management:
+        ipv4_address: 172.28.80.60
+    depends_on:
+    - open5gs
+    restart: on-failure
+  ueransim-ue:
+    build: *id001
+    image: strata-ueransim:local
+    profiles: *id002
+    mem_limit: 128m
+    volumes: *id003
+    command:
+    - /src/build/nr-ue
+    - -c
+    - /lab/config/ue.yml
+    networks:
+      management:
+        ipv4_address: 172.28.80.61
+    devices:
+    - /dev/net/tun:/dev/net/tun
+    cap_add:
+    - NET_ADMIN
+    depends_on:
+    - ueransim-gnb
+    restart: on-failure
+networks:
+  management:
+    internal: true
+    ipam:
+      config:
+      - subnet: 172.28.80.0/24
+        gateway: 172.28.80.254
+  primary:
+    internal: true
+    ipam:
+      config:
+      - subnet: 10.250.0.0/24
+        gateway: 10.250.0.254
+  backup:
+    internal: true
+    ipam:
+      config:
+      - subnet: 10.251.0.0/24
+        gateway: 10.251.0.254
+  service:
+    internal: true
+    ipam:
+      config:
+      - subnet: 10.90.0.0/24
+        gateway: 10.90.0.254
+  site-jkt:
+    internal: true
+    ipam:
+      config:
+      - subnet: 10.254.1.0/24
+        gateway: 10.254.1.254
+  site-bdg:
+    internal: true
+    ipam:
+      config:
+      - subnet: 10.254.2.0/24
+        gateway: 10.254.2.254
+  site-sby:
+    internal: true
+    ipam:
+      config:
+      - subnet: 10.254.3.0/24
+        gateway: 10.254.3.254
+volumes:
+  lab-host-keys-jkt-router: {}
+  lab-host-keys-jkt-client: {}
+  lab-host-keys-bdg-router: {}
+  lab-host-keys-bdg-client: {}
+  lab-host-keys-sby-router: {}
+  lab-host-keys-sby-client: {}
+  lab-host-keys-core-primary: {}
+  lab-host-keys-core-backup: {}
+  lab-host-keys-traffic-server: {}
+  lab-evidence: {}
+  lab-kafka: {}
+  lab-minio: {}
+  lab-hub: {}
+  lab-prometheus: {}
+  lab-grafana: {}
+  lab-netbox-db: {}
+  lab-netbox-redis: {}
+  lab-netbox-media: {}
+  lab-mobile-mongo: {}
+  lab-mobile-logs: {}

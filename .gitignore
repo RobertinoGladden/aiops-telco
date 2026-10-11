@@ -34,6 +34,7 @@ mlruns/
 deploy/secrets/
 data/
 .test-artifacts/
+lab/runtime/
 
 # OS
 .DS_Store

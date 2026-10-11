@@ -100,6 +100,7 @@ const errors = {
   decision_not_found: "Decision not found.",
 };
 const views = {
+  twin: ["Digital Twin", "Digital twin lab.", "Experiment with transport, mobile access and operational recovery."],
   overview: [
     "Overview",
     "Your network. One clear view.",
@@ -341,16 +342,29 @@ async function api(path, options = {}) {
   }
 }
 function showView(view, updateHash = true) {
-  if (!views[view]) view = "overview";
+  if (!Object.hasOwn(views, view)) { view = "twin"; updateHash = true; }
   selectedView = view;
+  document.body.classList.toggle("twin-view", view === "twin");
+  $("#search").placeholder = "Search devices, sources, incidents…";
+  $("#search").setAttribute("aria-label", "Search devices or incidents");
+  const groups = {twin: [["twin", "Digital Twin"]],
+    operations: [["overview", "Overview"], ["operations", "Service health"], ["incidents", "Incidents"], ["inventory", "Assets"]],
+    workspace: [["integrations", "Connections"], ["intelligence", "AI review"], ["settings", "Settings"]]};
+  const group = Object.keys(groups).find((key) => groups[key].some(([id]) => id === view));
+  const tabs = $("#context-tabs"); tabs.hidden = group === "twin";
+  tabs.replaceChildren(...groups[group].map(([id, name]) => {
+    const button = el("button", id === view ? "selected" : "", name);
+    button.type = "button"; button.setAttribute("aria-current", id === view ? "page" : "false");
+    button.addEventListener("click", () => showView(id)); return button;
+  }));
   Object.keys(views).forEach((key) => {
     $(`#view-${key}`).hidden = key !== view;
   });
   document.querySelectorAll(".sidebar [data-view]").forEach((node) => {
-    node.classList.toggle("active", node.dataset.view === view);
+    node.classList.toggle("active", node.dataset.navGroup === group);
     node.setAttribute(
       "aria-current",
-      node.dataset.view === view ? "page" : "false",
+      node.dataset.navGroup === group ? "page" : "false",
     );
   });
   $("#breadcrumb").textContent = views[view][0];
@@ -365,6 +379,7 @@ function showView(view, updateHash = true) {
   panel.classList.add("is-entering");
   showView.timer = setTimeout(() => panel.classList.remove("is-entering"), 650);
   if (updateHash) history.replaceState(null, "", `#${view}`);
+  document.dispatchEvent(new CustomEvent("strata:viewchange", {detail: {view}}));
   window.scrollTo({ top: 0, behavior: "instant" });
 }
 function connectorRows() {
@@ -1802,5 +1817,5 @@ document.addEventListener("keydown", (event) => {
   $("#search").focus();
 });
 enhanceIcons();
-showView(location.hash.slice(1) || "overview", false);
+showView(location.hash.slice(1) || "twin", false);
 render();

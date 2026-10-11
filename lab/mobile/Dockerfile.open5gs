@@ -1,0 +1,8 @@
+FROM ubuntu:22.04
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends git build-essential meson ninja-build pkg-config flex bison ca-certificates python3 python3-yaml python3-pymongo iproute2 iptables iputils-ping libyaml-dev libsctp-dev libgnutls28-dev libgcrypt20-dev libssl-dev libidn11-dev libmongoc-dev libbson-dev libmicrohttpd-dev libcurl4-gnutls-dev libtins-dev libtalloc-dev && rm -rf /var/lib/apt/lists/*
+WORKDIR /src
+RUN git init && git remote add origin https://github.com/open5gs/open5gs.git && git fetch --depth=1 origin d9d3abdd480be96fac3bc8a997e83446648763ca && git checkout --detach FETCH_HEAD
+RUN meson setup build --prefix=/opt/open5gs && ninja -C build -j 2 && ninja -C build install
+COPY lab/mobile/core.py /opt/strata/core.py
+ENTRYPOINT ["python3", "/opt/strata/core.py"]
